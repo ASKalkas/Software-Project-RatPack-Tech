@@ -139,14 +139,21 @@ app.post("/api/v1/station", async function (req, res) {
    
     
    //const updateQuery = 'UPDATE "se_project.stations" SET "stationname" = newStationName WHERE "id" = stationId'
-   try {
+   
     //  const updatedStation = await db("se_project.stations").update( existingStation).where(stationId).returning("*");
      //.set(newStation)
      //await db.updateQuery(updateQuery,[])
-     existingStation.stationname = newStationName;
-     await db.exec( "UPDATE stations SET stationname = $1 WHERE id = $2", [newStationName, stationId]);
-     return res.status(200).json(updatedStation );
-   } 
+     try {
+      await db("se_project.stations")
+      .where("id", stationId)
+      .update({
+        stationname : newStationName
+      })
+      .returning("*");
+      // Return a success message.
+     res.status(200).send("Station updated successfully");
+
+    } 
    catch (e) {
     console.log(e.message);
     res.status(400).json({error: "Unable to update station name.", });
@@ -173,8 +180,7 @@ app.post("/api/v1/station", async function (req, res) {
     //  .where("id", stationId)
     //  .set({ stationName });
   
-    // Return a success message.
-   // res.status(200).send("Station updated successfully");
+    
    
   
 app.delete("/api/v1/station/:stationId", async function (req, res) {
