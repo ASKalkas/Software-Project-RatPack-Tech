@@ -52,9 +52,9 @@ module.exports = function (app) {
    
   });
  
-  app.post("/api/v1/tickets/price/:originId & :destinationId", async function (req, res) {
-    const originId = req.params.originId;
-    const destinationId = req.params.destinationId;
+  app.post("/api/v1/tickets/price/", async function (req, res) {
+    const originId = req.query.originId;
+    const destinationId = req.query.destinationId;
 
     const station1 = await db
       .select("*")
@@ -75,7 +75,7 @@ module.exports = function (app) {
     try{
       const price = await getPrice(originId, destinationId);
       console.log(price);
-      return res.status(200);
+      return res.status(200).send("price found");
     }catch(e){
       console.log(e.message);
       return res.status(400).send("Could not get price");
