@@ -33,6 +33,10 @@ const getUser = async function (req) {
   return user;
 };
 
+const getPrice = async function(startStation, endStation){
+  return 100;
+}
+
 module.exports = function (app) {
   // example
   app.get("/users", async function (req, res) {
@@ -48,7 +52,35 @@ module.exports = function (app) {
    
   });
  
+  app.get("/api/v1/tickets/price", async function (req, res) {
+    const {startStation, endStation} = req;
 
+    const station1 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", startStation);
+    const station2 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", endStation);
+
+    if(!station1){
+      return res.status(404).send("start station does not exist");
+    }else if(!station2){
+      return res.status(404).send("end station does not exist");
+    }
+    
+
+    try{
+      const price = await getPrice(startStation, endStation);
+      console.log(price);
+      return res.status(200);
+    }catch(e){
+      console.log(e.message);
+      return res.status(400).send("Could not get price");
+    }
+    
+  })
 
   
 };
