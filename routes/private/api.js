@@ -52,27 +52,28 @@ module.exports = function (app) {
    
   });
  
-  app.get("/api/v1/tickets/price", async function (req, res) {
-    const {startStation, endStation} = req;
+  app.post("/api/v1/tickets/price/:originId & :destinationId", async function (req, res) {
+    const originId = req.params.originId;
+    const destinationId = req.params.destinationId;
 
     const station1 = await db
       .select("*")
       .from("se_project.stations")
-      .where("id", startStation);
+      .where("id", originId);
     const station2 = await db
       .select("*")
       .from("se_project.stations")
-      .where("id", endStation);
+      .where("id", destinationId);
 
     if(!station1){
       return res.status(404).send("start station does not exist");
-    }else if(!station2){
+    }if(!station2){
       return res.status(404).send("end station does not exist");
     }
     
 
     try{
-      const price = await getPrice(startStation, endStation);
+      const price = await getPrice(originId, destinationId);
       console.log(price);
       return res.status(200);
     }catch(e){
