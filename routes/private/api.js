@@ -15,29 +15,28 @@ const getUser = async function (req) {
     .where("token", sessionToken)
     .innerJoin(
       "se_project.users",
-      "se_project.sessions.userid",
+      "se_project.sessions.userId",
       "se_project.users.id"
     )
     .innerJoin(
       "se_project.roles",
-      "se_project.users.roleid",
+      "se_project.users.roleId",
       "se_project.roles.id"
     )
-   .first();
+    .first();
 
   console.log("user =>", user);
-  user.isNormal = user.roleid === roles.user;
-  user.isAdmin = user.roleid === roles.admin;
-  user.isSenior = user.roleid === roles.senior;
-  console.log("user =>", user)
+  user.isNormal = user.roleId === roles.user;
+  user.isAdmin = user.roleId === roles.admin;
+  user.isSenior = user.roleId === roles.senior;
   return user;
 };
 
 module.exports = function (app) {
   // example
-  app.get("/users", async function (req, res) {
+  app.put("/users", async function (req, res) {
     try {
-       const user = await getUser(req);
+      const user = await getUser(req);
       const users = await db.select('*').from("se_project.users")
         
       return res.status(200).json(users);
@@ -45,10 +44,33 @@ module.exports = function (app) {
       console.log(e.message);
       return res.status(400).send("Could not get users");
     }
-   
   });
- 
 
+  app.post("/api/v1/route", async function (req, res) {
+
+    // Check if user already exists in the system
+    const routeExists = await db
+      .select("*")
+      .from("se_project.routes")
+      .where("routename", req.body.routeName);
+    if (!isEmpty(routeExists)) {
+      return res.status(400).send("route exists");
+    }
+
+    const newRoute = {
+      fromstationid: req.body.newStationId,
+      tostationid: req.body.connectedStationId,
+      routename: req.body.routeName,
+    };
+    try {
+      const route = await db("se_project.routes").insert(newRoute).returning("*");
+
+      return res.status(200).json(route );
+    } catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not add route");
+    }
+  });
 
   
 };
