@@ -33,6 +33,8 @@ const getUser = async function (req) {
   return user;
 };
 
+//Helper method for checkPrice endpoint api
+//gets price based on shortest distance from originStation to destinationStation
 const getPrice = async function(startStation = 1, endStation = 2){
   const numStations = await db
   .count("*")
@@ -93,6 +95,7 @@ module.exports = function (app) {
    
   });
  
+  //checkPrice endpoint
   app.post("/api/v1/tickets/price/", async function (req, res) {
     const originId = req.query.originId;
     const destinationId = req.query.destinationId;
