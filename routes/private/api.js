@@ -146,7 +146,7 @@ await db("se_project.stations")
       return res.status(400).send("Could not get price");
     }
     
-  })
+  });
 
   //pay sub online
   app.post("/api/v1/payment/subscription", async function (req, res) {
@@ -159,7 +159,8 @@ await db("se_project.stations")
    const userD= await db
    .select("userId")
    .from("se_project.transaction")
-    .where("purchasedId",purchasedID);
+    .where("purchasedId",purchasedID)
+    .first();
     if(typo=="annual"){
       await db("se_project.subscription")
     .where("zoneId",Zid && "userId",userD)
@@ -174,10 +175,10 @@ await db("se_project.stations")
       }
       else{
         await db("se_project.subscription")
-    .where("zoneId",Zid ).andwher
+    .where("zoneId",Zid && "userId",userD )
     .update({noOfTickets:10});
       }
     }
     
-  })
+  });
 };
