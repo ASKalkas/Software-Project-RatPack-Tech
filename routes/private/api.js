@@ -100,4 +100,63 @@ await db("se_project.stations")
       })
       .returning("*");
 
-      
+    
+      module.exports = function (app) {
+  // example
+  app.get("/users", async function (req, res) {
+    try {
+       const user = await getUser(req);
+      const users = await db.select('*').from("se_project.users")
+        
+      return res.status(200).json(users);
+    } catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not get users");
+    }
+   
+  });
+ 
+  //checkPrice endpoint
+  app.get("/api/v1/tickets/price", async function (req, res) {
+    const originId = req.query.originId;
+    const destinationId = req.query.destinationId;
+
+    const station1 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", originId);
+    const station2 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", destinationId);
+
+    if(!station1){
+      return res.status(404).send("start station does not exist");
+    }if(!station2){
+      return res.status(404).send("end station does not exist");
+    }
+    
+
+    try{
+      const price = await getPrice(originId, destinationId);
+      console.log(price);
+      return res.status(200).send("price found");
+    }catch(e){
+      console.log(e.message);
+      return res.status(400).send("Could not get price");
+    }
+    
+  })
+
+  //pay sub online
+  app.post("/api/v1/payment/subscription", async function (req, res) {
+    const purchasedID =req.body.purchasedId;
+    const CCN = req.body.creditCardNumber;
+    const HOWN= req.body.holderName;
+    const ammo= req.body.payedAmount;
+    const typo= req.body.subType;
+    const Zid= req.body.zoneId;
+    const subscribe ={}
+
+  })
+};
