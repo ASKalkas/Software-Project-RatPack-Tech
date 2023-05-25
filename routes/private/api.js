@@ -47,6 +47,23 @@ module.exports = function (app) {
     }
    
   });
+
+  app.post("/api/v1/senior/request", async function (req, res){
+    try {
+      const use = await getUser(req);
+      const NewSreq = {
+        status: "pending",
+        userid: user.id,
+        nationalid: req.body
+      };
+      const Sreq = await db("se_project.senior_requests").insert(NewSreq).returning("*");
+      return res.status(200).json(user);
+
+    }catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not register user");
+    }
+  })
  
 
 
