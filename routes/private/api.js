@@ -156,7 +156,27 @@ await db("se_project.stations")
     const ammo= req.body.payedAmount;
     const typo= req.body.subType;
     const Zid= req.body.zoneId;
-    await db("se_project.")
-
+   const userD= await db("se_project.transaction")
+    .where("purchasedId",purchasedID)
+    .returning("userId");
+    if(typo=="annual"){
+      await db("se_project.transaction")
+    .where("zoneId",Zid && "userId",userD)
+    .update({noOfTickets:100});
+    }
+    else{
+      //duuno if month or monthly ba3den
+      if(typo=="monthly"){
+        await db("se_project.transaction")
+    .where("zoneId",Zid && "userId",userD)
+    .update({noOfTickets:50});
+      }
+      else{
+        await db("se_project.transaction")
+    .where("zoneId",Zid && "userId",userD)
+    .update({noOfTickets:10});
+      }
+    }
+    
   })
 };
