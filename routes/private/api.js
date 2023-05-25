@@ -48,3 +48,56 @@ module.exports = function (app) {
 
   
 };
+//Helper method for checkPrice endpoint api
+//gets price based on shortest distance from originStation to destinationStation
+const getPrice = async function(startStation = 1, endStation = 2){
+  const numStations = await db
+  .count("*")
+  .from("se_project.stations");
+  
+  var visited = [];
+  var queue = [];
+  queue.push({station: parseInt(startStation), distance: 0});
+
+  let curr = queue.shift();
+  for(let i = 0; curr != undefined; i++){
+    visited[visited.length] = curr;
+
+    const neighbours = await db
+    .select("tostationid")
+    .from("se_project.routes")
+    .where("fromstationid", curr.station);
+
+    for (let j = 0; j < neighbours.length; j++) {
+      var flag = false;
+      const station = neighbours[j].tostationid;
+
+      for (let k = 0; k < visited.length; k++){ 
+        const visitedStation = visited[k];
+        if(parseInt(station) == parseInt(visitedStation.station)){
+          flag = true;
+        }
+      }
+
+      if(flag){
+        continue;
+      }
+      queue.push({station: station, distance: curr.distance+1});
+    }
+    curr = queue.shift();
+  }
+
+  for (let i = 0; i < visited.length; i++) {
+    if(parseInt(endStation) == visited[i].station){
+      return visited[i].distance;
+    }
+  }
+}
+await db("se_project.stations")
+      .where("id", stationId)
+      .update({
+        stationname : newStationName
+      })
+      .returning("*");
+
+      
