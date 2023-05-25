@@ -93,12 +93,6 @@ const getPrice = async function(startStation = 1, endStation = 2){
     }
   }
 }
-await db("se_project.stations")
-      .where("id", stationId)
-      .update({
-        stationname : newStationName
-      })
-      .returning("*");
 
     
       module.exports = function (app) {
@@ -163,19 +157,19 @@ await db("se_project.stations")
     .first();
     if(typo=="annual"){
       await db("se_project.subscription")
-    .where("zoneId",Zid && "userId",userD)
+      .where("zoneId",Zid  ).andWhere( "userId",userD)
     .update({noOfTickets:100});
     }
     else{
       //duuno if month or monthly ba3den
       if(typo=="monthly"){
         await db("se_project.subscription")
-    .where("zoneId",Zid && "userId",userD)
+        .where("zoneId",Zid  ).andWhere( "userId",userD)
     .update({noOfTickets:50});
       }
       else{
         await db("se_project.subscription")
-    .where("zoneId",Zid && "userId",userD )
+    .where("zoneId",Zid  ).andWhere( "userId",userD)
     .update({noOfTickets:10});
       }
     }
