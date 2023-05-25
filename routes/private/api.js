@@ -8,32 +8,94 @@ const getUser = async function (req) {
   if (!sessionToken) {
     return res.status(301).redirect("/");
   }
-  console.log("hi",sessionToken);
+
   const user = await db
     .select("*")
     .from("se_project.sessions")
     .where("token", sessionToken)
     .innerJoin(
       "se_project.users",
-      "se_project.sessions.userid",
+      "se_project.sessions.userId",
       "se_project.users.id"
     )
     .innerJoin(
       "se_project.roles",
-      "se_project.users.roleid",
+      "se_project.users.roleId",
       "se_project.roles.id"
     )
-   .first();
+    .first();
 
   console.log("user =>", user);
-  user.isNormal = user.roleid === roles.user;
-  user.isAdmin = user.roleid === roles.admin;
-  user.isSenior = user.roleid === roles.senior;
-  console.log("user =>", user)
+  user.isNormal = user.roleId === roles.user;
+  user.isAdmin = user.roleId === roles.admin;
+  user.isSenior = user.roleId === roles.senior;
   return user;
 };
 
 module.exports = function (app) {
+  // example
+  app.put("/users", async function (req, res) {
+    try {
+      const user = await getUser(req);
+      const users = await db.select('*').from("se_project.users")
+        
+      return res.status(200).json(users);
+    } catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not get users");
+    }
+  });
+
+  
+};
+//Helper method for checkPrice endpoint api
+//gets price based on shortest distance from originStation to destinationStation
+const getPrice = async function(startStation = 1, endStation = 2){
+  const numStations = await db
+  .count("*")
+  .from("se_project.stations");
+  
+  var visited = [];
+  var queue = [];
+  queue.push({station: parseInt(startStation), distance: 0});
+
+  let curr = queue.shift();
+  for(let i = 0; curr != undefined; i++){
+    visited[visited.length] = curr;
+
+    const neighbours = await db
+    .select("tostationid")
+    .from("se_project.routes")
+    .where("fromstationid", curr.station);
+
+    for (let j = 0; j < neighbours.length; j++) {
+      var flag = false;
+      const station = neighbours[j].tostationid;
+
+      for (let k = 0; k < visited.length; k++){ 
+        const visitedStation = visited[k];
+        if(parseInt(station) == parseInt(visitedStation.station)){
+          flag = true;
+        }
+      }
+
+      if(flag){
+        continue;
+      }
+      queue.push({station: station, distance: curr.distance+1});
+    }
+    curr = queue.shift();
+  }
+
+  for (let i = 0; i < visited.length; i++) {
+    if(parseInt(endStation) == visited[i].station){
+      return visited[i].distance;
+    }
+  }
+}
+
+    
+      module.exports = function (app) {
   // example
   app.get("/users", async function (req, res) {
     try {
@@ -48,7 +110,90 @@ module.exports = function (app) {
    
   });
  
+  //checkPrice endpoint
+  app.get("/api/v1/tickets/price", async function (req, res) {
+    const originId = req.query.originId;
+    const destinationId = req.query.destinationId;
 
+    const station1 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", originId);
+    const station2 = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id", destinationId);
 
-  
+    if(!station1){
+      return res.status(404).send("start station does not exist");
+    }if(!station2){
+      return res.status(404).send("end station does not exist");
+    }
+    
+
+    try{
+      const price = await getPrice(originId, destinationId);
+      console.log(price);
+      return res.status(200).send("price found");
+    }catch(e){
+      console.log(e.message);
+      return res.status(400).send("Could not get price");
+    }
+    
+  });
+
+  //pay sub online
+  app.post("/api/v1/payment/subscription", async function (req, res) {
+    
+    const purchasedID =req.body.purchasedId;
+   const CCN = req.body.creditCardNumber;
+    const HOWN= req.body.holderName;
+    const ammo= req.body.payedAmount;
+   const typo= req.body.subType;
+    const Zid= req.body.zoneId;
+   const inserto={
+      purchasedId:purchasedID,
+      payedAmount:ammo,
+      id:1,
+      userid:1
+    };
+  // const ppo= await db("se_project.transaction").INSERT(inserto);
+   const userD= 1;//await getUser(req);
+    if(typo=="annual"){
+     const ddo= await db("se_project.subsription")
+      .where("zoneid",Zid  ).andWhere( "userid",userD)
+    .update({nooftickets:100});
+    }
+    else{
+      //duuno if month or monthly ba3den
+      if(typo=="monthly"){
+        const ddo=await db("se_project.subsription")
+        .where("zoneid",Zid  ).andWhere( "userid",userD)
+    .update({nooftickets:50});
+      }
+      else{
+        const ddo=await db("se_project.subsription")
+    .where("zoneid",Zid  ).andWhere( "userid",userD)
+    .update({nooftickets:10});
+      }
+    }
+     res.status(200).send("10"); 
+  });
+
+  app.post("/api/v1/payment/ticket", async function (req, res) {
+    const purchasedID =req.body.purchasedId;
+    const CCN = req.body.creditCardNumber;
+    const HOWN= req.body.holderName;
+    const ammo= req.body.payedAmount;
+   const origino=req.body.origin;
+   const destinationo=req.body.destination;
+   const tripDateo=re.body.tripDate;
+    
+   await db("se_project.transaction").INSERT(purchasedId, payedAmount).values("456",5556);
+   const userD= await getUser(req);
+   await db("se_project.rides").INSERT(purchasedId, payedAmount).values("456",5556);
+    //how can i insert the id
+
+    
+  });
 };
