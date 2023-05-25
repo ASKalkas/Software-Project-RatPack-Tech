@@ -35,7 +35,7 @@ const getUser = async function (req) {
   return user;
 };
 module.exports = function (app) {
-  // example
+
   //Resettting password endpoint
 
 app.put("/api/v1/password/reset", async function (req, res) {
@@ -59,15 +59,6 @@ app.put("/api/v1/password/reset", async function (req, res) {
     // If the user does not exist, return an HTTP not found code.
     return res.status(404).send("User does not exist");
   }
-
-  // Use the user's ID to update the user's password in the database.
-  // await db
-  //   .update("se_project.users")
-  //   .where("id", user.id)
-  //   .$replace("password",newPassword);
-  //  const reset =  `UPDATE "se_project.users" 
-  //  SET "password" = newPassword
-  //  WHERE "email" = email`;
    try {
       await db("se_project.users")
       .where("email", email)
@@ -96,12 +87,10 @@ app.post("/api/v1/station", async function (req, res) {
     // If the station name is already taken, return an HTTP conflict code.
     return res.status(409).send("Station name already taken");
   }
-    // Create a new station in the database.
-    //const Station = mongoose.model("Station"); 
+    // Create a new station 
     const newStation = {
       stationname: stationName,
       stationtype: "normal",
-      stationposition: "start",
       stationstatus: "new created",
     };
     
@@ -136,13 +125,6 @@ app.post("/api/v1/station", async function (req, res) {
       // If the station does not exist, return an HTTP not found code.
       return res.status(404).send("Station does not exist");
     }
-   
-    
-   //const updateQuery = 'UPDATE "se_project.stations" SET "stationname" = newStationName WHERE "id" = stationId'
-   
-    //  const updatedStation = await db("se_project.stations").update( existingStation).where(stationId).returning("*");
-     //.set(newStation)
-     //await db.updateQuery(updateQuery,[])
      try {
       await db("se_project.stations")
       .where("id", stationId)
@@ -159,53 +141,262 @@ app.post("/api/v1/station", async function (req, res) {
     res.status(400).json({error: "Unable to update station name.", });
    }
   });
-    // Get the new name of the station.
-  
-  // Update the station name.
-  //const success = updateStation(stationId, newStationName);
 
-  // Send a response to the client.
-  // if (success) {
-  //   res.status(200).json({
-  //     success: true,
-  //   });
-  // } else {
-  //   res.status(400).json({
-  //     error: "Unable to update station name.",
-  //   });
-  
-    // Update the station in the database.
-    //await db
-      //.update("se_project.stations")
-    //  .where("id", stationId)
-    //  .set({ stationName });
-  
-    
-   
-  
 app.delete("/api/v1/station/:stationId", async function (req, res) {
-  const { stationId } = req.params;
-
+  // Get the station ID from the request.
+  const {stationId :stationId }= req.params;
   // Check if the station exists.
   const existingStation = await db
     .select("*")
     .from("se_project.stations")
     .where("id", stationId)
     .first();
-
+  
   if (!existingStation) {
     // If the station does not exist, return an HTTP not found code.
     return res.status(404).send("Station does not exist");
   }
+  //console.log(existingStation.stationtype);
+  //console.log(existingStation.stationposition);
+  const pos = existingStation.stationposition;
+ // console.log(pos);
+  if(existingStation.stationtype =="transfer"){
+    //keda keda middle station
+    //station to make transfer
+    console.log("meow");
+    const newtransfer = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("tostationid", stationId)
+    .first();
+    const newtransferid=newtransfer.id;
+    console.log(newtransferid);
+    const type = "transfer";
+    //make it transfer
+     await db("se_project.stations")
+     .where("id",parseInt(newtransferid))
+     .update({
+        stationtype : type
+      })
+     .returning("*");
+     //get the new transfer postition  to make sure it is middle station
+    //  const newtranferpos = await db
+    //  .select("stationposition")
+    //  .from("se_project.stations")
+    //  .where("stationid",newtransferid)
+    //  .first();
+     const newtranferpos = newtransfer.stationposition;
+     position = "middle";
+     //make it middle station
+     if(newtranferpos != "middle"){
+      await db("se_project.stations")
+     .where("id",newtransferid)
+     .update({
+        stationposition : position
+      })
+     }
+     //make new routes 
+     const all = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("fromstationid", stationId);
+    for(let i = 0 ; i <all.length; i++){
+      if(newtransferid!=all[i].tostationid){ 
+      //create a new raye7 route
+    const nRoute={
+    routename: "new",
+    fromstationid: newtransferid,
+    tostationid : all[i].tostationid,
+  };
+  //insert the new routes
+  await db("se_project.routes").insert(nRoute).returning("*");
+  //get route id
+  const routeid = await db
+ .select("*")
+ .from("se_project.routes")
+ .where("tostationid", all[i].tostationid)
+ .first();
+ //create new stationroutes
+ const stationroute={
+  stationid: newtransferid,
+  routeid:routeid.id,
+};
+const sr={
+  stationid: all[i].tostationid,
+  routeid:routeid.id,
+};
+ //insert the new station route
+ await db("se_project.stationroutes").insert(stationroute).returning("*");
+ await db("se_project.stationroutes").insert(sr).returning("*");
 
+      }
+}
+for(let i = 0 ; i <all.length; i++){
+  //create a new ra8e3 route
+  if(newtransferid!=all[i].tostationid){
+const nRoute={
+routename: "new",
+fromstationid: all[i].tostationid,
+tostationid : newtransferid ,
+};
+
+//insert the new routes
+await db("se_project.routes").insert(nRoute).returning("*");
+//get route id
+  const routeid = await db
+ .select("id")
+ .from("se_project.routes")
+ .where("fromstationid", all[i].tostationid)
+ .first();
+ //create new stationroutes
+ const stationroute={
+  stationid: newtransferid,
+  routeid:routeid.id,
+};
+const sr={
+  stationid: all[i].tostationid,
+  routeid:routeid.id,
+};
+ //insert the new station route
+ await db("se_project.stationroutes").insert(stationroute).returning("*");
+ await db("se_project.stationroutes").insert(sr).returning("*");
+
+  }
+}
+  }
+  else if(existingStation.stationtype!="transfer"){
+  // get station's poisition
+  //end case
+  if(pos == "end") {
+  //console.log("akked msh da");
+   //getting the previous station
+   const previd = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("tostationid", stationId)
+    .first();
+    //getting the position of the previous station
+    const prevtype = await db
+    .select("*")
+    .from("se_project.stations")
+    .where("id",previd.fromstationid)
+    .first();
+     // check if the previous  station is middle
+    if(prevtype.stationposition == "middle"){
+      //make it our new end station
+      await db("se_project.stations")
+      .where("id", previd.fromstationid)
+      .update({
+        stationposition: "end"
+      })
+      .returning("*");
+    }
+  }
+    //deleting routes and stationroutes
+    //done automatically with cascade delete
+  //start case
+  else if (pos == "start"){
+   //get postion of next station
+   //console.log("???",pos);
+   const nextid = await db
+   .select("*")
+   .from("se_project.routes")
+   .where("fromstationid", stationId)
+   .first();
+   //get the type of the next station
+   const nexttype = await db
+   .select("*")
+   .from("se_project.stations")
+   .where("id",nextid.tostationid)
+   .first();
+    // check if the next station is middle
+    if(nexttype.stationposition == "middle"){
+      //make it our new start station
+      await db("se_project.stations")
+     .where("id", nextid.tostationid)
+     .update({
+      stationposition : "start"
+      })
+     .returning("*");
+    } 
+  }
+    //deleting routes and stationroutes
+    //done automatically with cascade delete
+  //middle case
+  else if(pos=="middle"){
+    //previous station id
+    const previd = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("tostationid", stationId)
+    .first();
+    // next station
+    const nextid = await db
+   .select("*")
+   .from("se_project.routes")
+   .where("fromstationid", stationId)
+   .first();
+   //create a new ray7 route
+   const newRoute = {
+    routename: "new",
+    fromstationid: previd.fromstationid,
+    tostationid : nextid.tostationid,
+  };
+  //create a new rage3 route
+  const nRoute={
+    routename: "new",
+    fromstationid: nextid.tostationid,
+    tostationid : previd.fromstationid,
+  };
+  //insert the new routes
+  await db("se_project.routes").insert(newRoute).returning("*");
+  await db("se_project.routes").insert(nRoute).returning("*");
+  //get route id
+  const routeid = await db
+ .select("id")
+ .from("se_project.routes")
+ .where("fromstationid", previd.fromstationid)
+ .first();
+ //get route id
+ const rid = await db
+ .select("id")
+ .from("se_project.routes")
+ .where("tostationid", previd.fromstationid)
+ .first();
+  const stationroute={
+    stationid: nextid.tostationid,
+    routeid:routeid.id,
+  };
+  const sr={
+    stationid: previd.fromstationid,
+    routeid:routeid.id,
+  };
+  const stationr={
+    stationid: nextid.tostationid,
+    routeid:rid.id,
+  };
+  const sroute={
+    stationid: previd.fromstationid,
+    routeid:rid.id,
+  };
+   //insert the new station route
+   await db("se_project.stationroutes").insert(stationroute).returning("*");
+   await db("se_project.stationroutes").insert(sr).returning("*");
+   await db("se_project.stationroutes").insert(sroute).returning("*");
+   await db("se_project.stationroutes").insert(sroute).returning("*");
+}
+  //deleting routes and stationroutes
+  //done automatically with delete cascade
+}
   // Delete the station from the database.
-  await db
-    .delete("se_project.stations")
-    .where("id", stationId);
+  await db("se_project.stations")
+    .where("id", stationId)
+    .delete();
 
   // Return a success message.
   res.status(200).send("Station deleted successfully");
 });
+  // example
 app.get("/users", async function (req, res) {
   try {
      const user = await getUser(req);
