@@ -71,7 +71,6 @@ const getPrice = async function(startStation = 1, endStation = 2){
     }
     curr = queue.shift();
   }
-  
 
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
@@ -96,7 +95,7 @@ module.exports = function (app) {
   });
  
   //checkPrice endpoint
-  app.post("/api/v1/tickets/price/", async function (req, res) {
+  app.get("/api/v1/tickets/price", async function (req, res) {
     const originId = req.query.originId;
     const destinationId = req.query.destinationId;
 
