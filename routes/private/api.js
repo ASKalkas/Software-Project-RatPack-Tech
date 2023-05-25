@@ -126,5 +126,41 @@ module.exports = function (app) {
     
   })
 
-  
+  app.put("/api/v1/ride/simulate", async function (req, res) {
+    const origin = req.body.origin;
+    const destination = req.body.destination;
+    const date = new Date(req.body.tripDate);
+    const tripDate = date.toISOString();
+    const user = await getUser(req);
+    const userID = user.id;
+    console.log(userID);
+
+    const rideExists = await db
+    .select("*")
+    .from("se_project.rides")
+    .where("origin", origin)
+    .andWhere("destination", destination)
+    .andWhere("tripdate", tripDate)
+    .andWhere("userid", userID);
+
+    if(isEmpty(rideExists)){
+      return res.status(404).send("trip doesn't exist");
+    }
+
+    try{
+      await db("se_project.rides")
+      .where("origin", origin)
+      .andWhere("destination", destination)
+      .andWhere("tripdate", tripDate)
+      .andWhere("userid", userID)
+      .update({
+        status : "Completed"
+      })
+      .returning("*");
+
+      return res.status(200).send("ride simulated successfully");
+    }catch(e){
+      return res.status(404).send("couldn't simulate ride");
+    }
+  })
 };
