@@ -156,7 +156,7 @@ await db("se_project.stations")
     const ammo= req.body.payedAmount;
     const typo= req.body.subType;
     const Zid= req.body.zoneId;
-    const subscribe ={}
+    await db("se_project.")
 
   })
 };
