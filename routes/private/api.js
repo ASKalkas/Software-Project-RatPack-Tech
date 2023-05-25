@@ -114,8 +114,8 @@ const getPrice = async function(startStation = 1, endStation = 2){
 
     try{ 
       const TId = parseInt(req.query.ticketId);
-      const start = await db.select('origin').from('se_project.rides').where("ticketid", TId);
-      const end = await db.select('destination').from('se_project.rides').where("ticketid", TId);
+      const start = await db.select('origin').from('se_project.tickets').where("id", TId);
+      const end = await db.select('destination').from('se_project.tickets').where("id", TId);
       const amnt = await getPrice(start, end);
       const user = await getUser(req);
       const NewRef = {
