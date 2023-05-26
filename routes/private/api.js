@@ -72,9 +72,31 @@ const getPrice = async function(startStation = 1, endStation = 2){
     curr = queue.shift();
   }
 
+  const distance = 0;
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
-      return visited[i].distance;
+      distance = visited[i].distance;
+      break;
+    }
+  }
+
+  const zones = await db
+  .select("*")
+  .from("se_project.zones")
+  .orderBy("price");
+
+  const length = zones.length;
+  if(length == 0){
+    return -1;
+  }
+
+  for(let i = 0; i < length; i++){
+    try{
+      if(distance < parseInt(zones[i].zonetype)){
+        return zones[i].price;
+      }
+    }catch(e){
+      return zones[length - 1].price;
     }
   }
 }
@@ -117,8 +139,10 @@ module.exports = function (app) {
 
     try{
       const price = await getPrice(originId, destinationId);
-      console.log(price);
-      return res.status(200).send("price found");
+      if(price < 0){
+        return res.status(400).send("missing zone data");
+      }
+      return res.status(200).send("price: "+ price);
     }catch(e){
       console.log(e.message);
       return res.status(400).send("Could not get price");
