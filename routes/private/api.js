@@ -72,7 +72,7 @@ const getPrice = async function(startStation = 1, endStation = 2){
     curr = queue.shift();
   }
 
-  const distance = 0;
+  var distance = 0;
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
       distance = visited[i].distance;
@@ -553,4 +553,58 @@ app.get("/users", async function (req, res) {
     return res.status(400).send("Could not get users");
   }
  
-});}
+});
+
+  app.post("/api/v1/senior/request", async function (req, res){
+    try {
+      const user = await getUser(req);
+      const NewSreq = {
+        status: "pending",
+        userid: user.id,
+        nationalid: parseInt(req.body.nationalid)
+      };
+      const Sreq = await db("se_project.senior_requests").insert(NewSreq).returning("*");
+      return res.status(200).json(Sreq);
+
+    }catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not complete action");
+    }
+  });
+
+  app.post("/api/v1/refund/:ticketId", async function (req, res){
+
+    try{ 
+      const TId = req.params.ticketId;
+      const start = await db.select('origin').from('se_project.tickets').where("id", TId);
+      const end = await db.select('destination').from('se_project.tickets').where("id", TId);
+      const startId = await db.select('id').from('se_project.stations').where("stationname", start);
+      const endId = await db.select('id').from('se_project.stations').where("stationname", end);
+      const amnt = await getPrice(startId.id, endId.id);
+      const user = await getUser(req);
+      const NewRef = {
+        status: "pending",
+        userid: user.id,
+        refundamount: amnt,
+        ticketid: TId,
+      };
+      const Ref = await db("se_project.refund_requests").insert(NewRef).returning("*");
+      return res.status(200).json(Ref);
+
+    }catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not complete action");
+    }
+  });
+
+  app.get("/api/v1/zones", async function (req, res){
+    try{
+      const zones = await db.select('*').from('se_project.zones');
+      return res.status(200).json(zones);
+
+    }catch (e) {
+      console.log(e.message);
+      return res.status(400).send("Could not complete action");
+    }
+  });
+}
