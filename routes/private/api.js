@@ -97,9 +97,9 @@ app.post("/api/v1/station", async function (req, res) {
     //await Station.insertOrIgnore(newStation);
     //await db.insert("se_project.stations", newStation);
     try {
-      const station = await db("se_project.stations").insert(newStation).returning("*");
-     // res.status(201).send("Station created successfully");
-      return res.status(200).json(station );
+       await db("se_project.stations").insert(newStation).returning("*");
+      res.status(201).send("Station created successfully");
+      //return res.status(200).json(station );
     } catch (e) {
       console.log(e.message);
       return res.status(400).send("Could not add new station");
