@@ -8,11 +8,11 @@ INSERT INTO se_project.roles("role")
 
 -- Insert data into Zones
 INSERT INTO se_project.zones("zonetype", "price")
-	VALUES ("9", 5);
+	VALUES ('9', 5);
 INSERT INTO se_project.zones("zonetype", "price")
-	VALUES ("16", 7);
+	VALUES ('16', 7);
 INSERT INTO se_project.zones("zonetype", "price")
-	VALUES ("greater", 10);
+	VALUES ('greater', 10);
 -- Set user role as Admin
 UPDATE se_project.users
 	SET "roleid"=2
