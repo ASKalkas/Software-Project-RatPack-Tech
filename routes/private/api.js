@@ -3,7 +3,7 @@ const { v4 } = require("uuid");
 const db = require("../../connectors/db");
 const roles = require("../../constants/roles");
 const {getSessionToken}=require('../../utils/session')
-const mongoose = require("mongoose");
+
 
 const getUser = async function (req) {
   const sessionToken = getSessionToken(req);
@@ -169,23 +169,23 @@ app.delete("/api/v1/station/:stationId", async function (req, res) {
     .from("se_project.routes")
     .where("tostationid", stationId)
     .first();
-    const newtransferid=newtransfer.id;
+    const newtransferid=newtransfer.fromstationid;
     console.log(newtransferid);
     const type = "transfer";
     //make it transfer
      await db("se_project.stations")
-     .where("id",parseInt(newtransferid))
+     .where("id",newtransferid)
      .update({
         stationtype : type
       })
      .returning("*");
      //get the new transfer postition  to make sure it is middle station
-    //  const newtranferpos = await db
-    //  .select("stationposition")
-    //  .from("se_project.stations")
-    //  .where("stationid",newtransferid)
-    //  .first();
-     const newtranferpos = newtransfer.stationposition;
+     const newtpos = await db
+      .select("*")
+      .from("se_project.stations")
+      .where("id",newtransferid)
+     .first();
+     const newtranferpos = newtpos.stationposition;
      position = "middle";
      //make it middle station
      if(newtranferpos != "middle"){
@@ -208,45 +208,28 @@ app.delete("/api/v1/station/:stationId", async function (req, res) {
     fromstationid: newtransferid,
     tostationid : all[i].tostationid,
   };
+   //create a new ra8e3 route
+    const newRoute={
+    routename: "new",
+    fromstationid: all[i].tostationid,
+    tostationid : newtransferid ,
+    };
+    
   //insert the new routes
   await db("se_project.routes").insert(nRoute).returning("*");
+  await db("se_project.routes").insert(newRoute).returning("*");
   //get route id
   const routeid = await db
  .select("*")
  .from("se_project.routes")
  .where("tostationid", all[i].tostationid)
+ .andWhere("routename","new")
  .first();
- //create new stationroutes
- const stationroute={
-  stationid: newtransferid,
-  routeid:routeid.id,
-};
-const sr={
-  stationid: all[i].tostationid,
-  routeid:routeid.id,
-};
- //insert the new station route
- await db("se_project.stationroutes").insert(stationroute).returning("*");
- await db("se_project.stationroutes").insert(sr).returning("*");
-
-      }
-}
-for(let i = 0 ; i <all.length; i++){
-  //create a new ra8e3 route
-  if(newtransferid!=all[i].tostationid){
-const nRoute={
-routename: "new",
-fromstationid: all[i].tostationid,
-tostationid : newtransferid ,
-};
-
-//insert the new routes
-await db("se_project.routes").insert(nRoute).returning("*");
-//get route id
-  const routeid = await db
- .select("id")
+ const rid = await db
+ .select("*")
  .from("se_project.routes")
  .where("fromstationid", all[i].tostationid)
+ .andWhere("routename","new")
  .first();
  //create new stationroutes
  const stationroute={
@@ -257,11 +240,21 @@ const sr={
   stationid: all[i].tostationid,
   routeid:routeid.id,
 };
+const stationro={
+  stationid: newtransferid,
+  routeid:rid.id,
+};
+const ss={
+  stationid: all[i].tostationid,
+  routeid:rid.id,
+};
  //insert the new station route
  await db("se_project.stationroutes").insert(stationroute).returning("*");
  await db("se_project.stationroutes").insert(sr).returning("*");
+ await db("se_project.stationroutes").insert(stationro).returning("*");
+ await db("se_project.stationroutes").insert(ss).returning("*");
 
-  }
+      }
 }
   }
   else if(existingStation.stationtype!="transfer"){
@@ -334,18 +327,17 @@ const sr={
     const nextid = await db
    .select("*")
    .from("se_project.routes")
-   .where("fromstationid", stationId)
-   .first();
+   .where("fromstationid", stationId);
    //create a new ray7 route
    const newRoute = {
     routename: "new",
     fromstationid: previd.fromstationid,
-    tostationid : nextid.tostationid,
+    tostationid : nextid[1].tostationid,
   };
   //create a new rage3 route
   const nRoute={
     routename: "new",
-    fromstationid: nextid.tostationid,
+    fromstationid: nextid[1].tostationid,
     tostationid : previd.fromstationid,
   };
   //insert the new routes
@@ -353,18 +345,20 @@ const sr={
   await db("se_project.routes").insert(nRoute).returning("*");
   //get route id
   const routeid = await db
- .select("id")
+ .select("*")
  .from("se_project.routes")
- .where("fromstationid", previd.fromstationid)
+ .where("fromstationid", nextid[1].tostationid)
+ .andWhere("routename","new")
  .first();
  //get route id
  const rid = await db
- .select("id")
+ .select("*")
  .from("se_project.routes")
- .where("tostationid", previd.fromstationid)
+ .where("tostationid", nextid[1].tostationid)
+ .andWhere("routename","new")
  .first();
   const stationroute={
-    stationid: nextid.tostationid,
+    stationid: nextid[1].tostationid,
     routeid:routeid.id,
   };
   const sr={
@@ -372,7 +366,7 @@ const sr={
     routeid:routeid.id,
   };
   const stationr={
-    stationid: nextid.tostationid,
+    stationid: nextid[1].tostationid,
     routeid:rid.id,
   };
   const sroute={
@@ -408,4 +402,4 @@ app.get("/users", async function (req, res) {
     return res.status(400).send("Could not get users");
   }
  
-});
+});}
