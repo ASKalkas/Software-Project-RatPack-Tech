@@ -86,9 +86,32 @@ const getPrice = async function(startStation = 1, endStation = 2){
     curr = queue.shift();
   }
 
+  
+  var distance = 0;
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
-      return visited[i].distance;
+      distance = visited[i].distance;
+      break;
+    }
+  }
+
+  const zones = await db
+  .select("*")
+  .from("se_project.zones")
+  .orderBy("price");
+
+  const length = zones.length;
+  if(length == 0){
+    return -1;
+  }
+
+  for(let i = 0; i < length; i++){
+    try{
+      if(distance < parseInt(zones[i].zonetype)){
+        return zones[i].price;
+      }
+    }catch(e){
+      return zones[length - 1].price;
     }
   }
 }
@@ -113,10 +136,12 @@ const getPrice = async function(startStation = 1, endStation = 2){
   app.post("/api/v1/refund/:ticketId", async function (req, res){
 
     try{ 
-      const TId = parseInt(req.query.ticketId);
+      const TId = req.params.ticketId;
       const start = await db.select('origin').from('se_project.tickets').where("id", TId);
       const end = await db.select('destination').from('se_project.tickets').where("id", TId);
-      const amnt = await getPrice(start, end);
+      const startId = await db.select('id').from('se_project.stations').where("stationname", start);
+      const endId = await db.select('id').from('se_project.stations').where("stationname", end);
+      const amnt = await getPrice(startId.id, endId.id);
       const user = await getUser(req);
       const NewRef = {
         status: "pending",
@@ -125,7 +150,7 @@ const getPrice = async function(startStation = 1, endStation = 2){
         ticketid: TId,
       };
       const Ref = await db("se_project.refund_requests").insert(NewRef).returning("*");
-      return res.status(200).json(NewRef);
+      return res.status(200).json(Ref);
 
     }catch (e) {
       console.log(e.message);
