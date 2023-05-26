@@ -248,9 +248,9 @@ app.post("/api/v1/station", async function (req, res) {
     //await Station.insertOrIgnore(newStation);
     //await db.insert("se_project.stations", newStation);
     try {
-      const station = await db("se_project.stations").insert(newStation).returning("*");
-     // res.status(201).send("Station created successfully");
-      return res.status(200).json(station );
+       await db("se_project.stations").insert(newStation).returning("*");
+      res.status(201).send("Station created successfully");
+      //return res.status(200).json(station );
     } catch (e) {
       console.log(e.message);
       return res.status(400).send("Could not add new station");
@@ -314,14 +314,14 @@ app.delete("/api/v1/station/:stationId", async function (req, res) {
   if(existingStation.stationtype =="transfer"){
     //keda keda middle station
     //station to make transfer
-    console.log("meow");
+    //console.log("meow");
     const newtransfer = await db
     .select("*")
     .from("se_project.routes")
     .where("tostationid", stationId)
     .first();
     const newtransferid=newtransfer.fromstationid;
-    console.log(newtransferid);
+    //console.log(newtransferid);
     const type = "transfer";
     //make it transfer
      await db("se_project.stations")
