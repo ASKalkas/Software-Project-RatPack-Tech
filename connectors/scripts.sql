@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS se_project.transactions
     amount INTEGER NOT NULL,
     userid INTEGER NOT NULL,
     purchasedid text NOT NULL, 
+    purchasetype text NOT NULL,
     FOREIGN KEY( userid ) REFERENCES se_project.users,
     CONSTRAINT transactions_pkey PRIMARY KEY (id)
 );
