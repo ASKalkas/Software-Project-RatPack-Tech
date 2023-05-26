@@ -163,14 +163,14 @@ app.delete("/api/v1/station/:stationId", async function (req, res) {
   if(existingStation.stationtype =="transfer"){
     //keda keda middle station
     //station to make transfer
-    console.log("meow");
+    //console.log("meow");
     const newtransfer = await db
     .select("*")
     .from("se_project.routes")
     .where("tostationid", stationId)
     .first();
     const newtransferid=newtransfer.fromstationid;
-    console.log(newtransferid);
+    //console.log(newtransferid);
     const type = "transfer";
     //make it transfer
      await db("se_project.stations")
