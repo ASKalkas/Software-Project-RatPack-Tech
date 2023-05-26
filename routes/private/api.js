@@ -2,7 +2,7 @@ const { isEmpty } = require("lodash");
 const { v4 } = require("uuid");
 const db = require("../../connectors/db");
 const roles = require("../../constants/roles");
-const {getSessionToken}=require('../../utils/session')
+const {getSessionToken}=require('../../utils/session');
 const getUser = async function (req) {
   const sessionToken = getSessionToken(req);
   if (!sessionToken) {
@@ -15,20 +15,20 @@ const getUser = async function (req) {
     .where("token", sessionToken)
     .innerJoin(
       "se_project.users",
-      "se_project.sessions.userId",
+      "se_project.sessions.userid",
       "se_project.users.id"
     )
     .innerJoin(
       "se_project.roles",
-      "se_project.users.roleId",
+      "se_project.users.roleid",
       "se_project.roles.id"
     )
     .first();
 
   console.log("user =>", user);
-  user.isNormal = user.roleId === roles.user;
-  user.isAdmin = user.roleId === roles.admin;
-  user.isSenior = user.roleId === roles.senior;
+  user.isNormal = user.roleid === roles.user;
+  user.isAdmin = user.roleid === roles.admin;
+  user.isSenior = user.roleid === roles.senior;
   return user;
 };
 
@@ -86,10 +86,31 @@ const getPrice = async function(startStation = 1, endStation = 2){
     }
     curr = queue.shift();
   }
-
+  const distance = 0;
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
-      return visited[i].distance;
+      distance = visited[i].distance;
+      break;
+    }
+  }
+
+  const zones = await db
+  .select("*")
+  .from("se_project.zones")
+  .orderBy("price");
+
+  const length = zones.length;
+  if(length == 0){
+    return -1;
+  }
+
+  for(let i = 0; i < length; i++){
+    try{
+      if(distance < parseInt(zones[i].zonetype)){
+        return zones[i].price;
+      }
+    }catch(e){
+      return zones[length - 1].price;
     }
   }
 }
@@ -145,55 +166,199 @@ const getPrice = async function(startStation = 1, endStation = 2){
   //pay sub online
   app.post("/api/v1/payment/subscription", async function (req, res) {
     
-    const purchasedID =req.body.purchasedId;
-   const CCN = req.body.creditCardNumber;
+    const purchasedID =req.query.purchasedId;
+    const CCN = req.body.creditCardNumber;
     const HOWN= req.body.holderName;
     const ammo= req.body.payedAmount;
-   const typo= req.body.subType;
+    const typo= req.body.subType;
     const Zid= req.body.zoneId;
-   const inserto={
-      purchasedId:purchasedID,
-      payedAmount:ammo,
-      id:1,
-      userid:1
-    };
-  // const ppo= await db("se_project.transaction").INSERT(inserto);
-   const userD= 1;//await getUser(req);
+   const userD= 1;
+    const userd=await getUser(req);
+    const userdd=userd.id;
+ const inserto={
+  purchasedid:purchasedID,
+  //amount from get ammount or body?
+ amount:ammo,
+  userid:userdd,
+  purchasetype:"subscription",
+ // zoneid:Zid
+};
+const subExists = await db
+   .select("*")
+   .from("se_project.subsription")
+   .where("userid", userdd).andWhere("zoneid",Zid);
+ if (isEmpty(subExists)) {
+  const niko={
+    zoneid:Zid,
+    subtype:"quartrly",
+    nooftickets:0,
+    userid:userdd
+  }
+  const yoo=await db("se_project.subsription").insert(niko).returning("*");
+ }
+  
+  const ppo= await db("se_project.transactions").insert(inserto).returning("*");
+  
     if(typo=="annual"){
      const ddo= await db("se_project.subsription")
-      .where("zoneid",Zid  ).andWhere( "userid",userD)
-    .update({nooftickets:100});
+      .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:100,subtype:"annual"});
     }
     else{
       //duuno if month or monthly ba3den
       if(typo=="monthly"){
         const ddo=await db("se_project.subsription")
-        .where("zoneid",Zid  ).andWhere( "userid",userD)
-    .update({nooftickets:50});
+        .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:50,subtype:"monthly"});
       }
-      else{
+      else{ 
         const ddo=await db("se_project.subsription")
-    .where("zoneid",Zid  ).andWhere( "userid",userD)
-    .update({nooftickets:10});
+    .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:10,subtype:"quartrly"});
       }
     }
-     res.status(200).send("10"); 
+     res.status(200).send("subscription paid"); 
+
   });
 
   app.post("/api/v1/payment/ticket", async function (req, res) {
-    const purchasedID =req.body.purchasedId;
+    const purchasedID =req.query.purchasedId;
     const CCN = req.body.creditCardNumber;
     const HOWN= req.body.holderName;
     const ammo= req.body.payedAmount;
    const origino=req.body.origin;
    const destinationo=req.body.destination;
-   const tripDateo=re.body.tripDate;
-    
-   await db("se_project.transaction").INSERT(purchasedId, payedAmount).values("456",5556);
-   const userD= await getUser(req);
-   await db("se_project.rides").INSERT(purchasedId, payedAmount).values("456",5556);
-    //how can i insert the id
-
-    
-  });
+   const tripDateo=req.body.tripDate;
+   const userdo=await getUser(req);
+    const userpd=userdo.id;
+    ///////////////////////////
+    const og = await db
+   .select("id")
+   .from("se_project.stations")
+   .where("stationname", origino);
+   //
+   const dn = await db
+   .select("id")
+   .from("se_project.stations")
+   .where("stationname", destinationo);
+    const prico=getPrice(og,dn);
+    if(ammo!=prico){return res.status(400).send("invalid funds")}
+    else{//the rest of the code
+    } 
+    ////////////////////////////
+   const subExists = await db
+   .select("*")
+   .from("se_project.subsription")
+   .where("userid", userpd);
+ if (!isEmpty(subExists)) {
+   return res.status(400).send("sub exists");
+ }
+ else{
+ const insertog={ 
+  purchasedid:purchasedID, 
+  //amount from get ammount or body?
+  amount:ammo,
+  userid:userpd, 
+  purchasetype:"ticket"
 };
+const suyExists = await db
+   .select("*")
+   .from("se_project.tickets")
+   .where("userid", userpd).andWhere("origin",origino).andWhere("destination",destinationo);
+ if (!isEmpty(suyExists)) {
+   return res.status(400).send("ticket already bought exists"); 
+ }
+ else{const poo= await db("se_project.transactions").insert(insertog).returning("*");
+
+ const insertouo={
+   
+  //amount from get ammount or body?
+  origin:origino, 
+  destination:destinationo,
+  tripdate:tripDateo,
+  userid:userpd,
+  // subid:0
+};
+ const ao= await db("se_project.tickets").insert(insertouo).returning("id");
+   const po=parseInt(ao);  
+///////////////////////////////////////////////////////
+const inserta={
+userid:userpd,
+status:"upcoming",
+origin:origino,
+destination:destinationo,
+ticketid:4,//po, 
+tripdate:tripDateo 
+};
+ const ppo= await db("se_project.rides").insert(inserta).returning("*")
+ res.status(200).send("ticket paid"); 
+ res.status(200).send("ticket paid\n"+tripDateo+"\n"+origino+"\n"+destinationo);
+ 
+ 
+}
+ }
+}); 
+/////////////////////////////////////////////////////////////////////////////////////////////
+app.post("/api/v1/tickets/purchase/subscription", async function (req, res) {
+    const subid=req.body.subID;
+    const origink=req.body.origio;
+    const desitinationk=req.body.destin;
+    const tripd=req.body.date;
+    const userd=await getUser(req);
+    const userod=userd.id;
+     ///////////////////////////
+     const og = await db
+     .select("id")
+     .from("se_project.stations")
+     .where("stationname", origink);
+     //
+     const dn = await db
+     .select("id")
+     .from("se_project.stations")
+     .where("stationname", desitinationk);
+      const prico=getPrice(og,dn);
+      if(ammo!=prico){return res.status(400).send("invalid funds")}
+      else{//the rest of the code
+      } 
+      ////////////////////////////
+const subExists = await db
+ .select("*")
+ .from("se_project.subsription")
+ .where("id", subid);
+if (isEmpty(subExists)) {
+ return res.status(400).send("sub doesn't  exist");
+}
+else{ 
+  const suyExists = await db
+  .select("*")
+  .from("se_project.tickets")
+  .where("userid", userod).andWhere("origin",origink).andWhere("destination",desitinationk);
+if (!isEmpty(suyExists)) {
+  return res.status(400).send("ticket already bought exists");
+}
+else{ const ino={
+  
+  //amount from get ammount or body?
+  origin:origink,  
+  destination:desitinationk,
+  tripdate:tripd,
+  userid:userod,
+   
+};
+ const apoo= await db("se_project.tickets").insert(ino).returning("id");
+    const apo=parseInt(apoo);
+///////////////////////////////////////////////////////
+const insertak={
+userid:userod,
+status:"upcoming",
+origin:origink,
+destination:desitinationk,
+tripdate:tripd, 
+ticketid:apo
+};
+ const ppo= await db("se_project.rides").insert(insertak).returning("*")
+ res.status(200).send("ticket paid\n"+tripd+"\n"+origink+"\n"+desitinationk);
+ }
+ }
+});
+}; 
