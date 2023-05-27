@@ -122,43 +122,136 @@ module.exports = function (app) {
     //  .set({ stationName });
   
     
-   
-/*  
-app.delete("/api/v1/station/:stationId", async function (req, res) {
-  const { stationId } = req.params;
+    
 
-  // Check if the station exists.
-  const existingStation = await db
+
+    app.delete("/api/v1/route/:routeId", async function(req,res){
+      const {routeId:routeId }= req.params;
+      const existingRoutes = await db
+      .select("*")
+      .from("se_project.routes")
+      .where("id", routeId)
+      .first();
+      const fromStationId=existingRoutes.fromstationid
+      const toStationId= existingRoutes.tostationid
+      if(!existingRoutes){
+        return res.status(404).send("Route does not exist");
+      }
+      await db("se_project.routes")
+      .where("id", routeId)
+      .delete();    
+      const existingBackwardRoute = await db
+      .select("*")
+      .from("se_project.routes")
+      .where("fromstationid" ,toStationId ).andWhere("tostationid", fromStationId)
+      .first();
+    const routeToStationExistsInTo = await db
     .select("*")
-    .from("se_project.stations")
-    .where("id", stationId)
+    .from("se_project.routes")
+    .where("tostationid" ,toStationId )
     .first();
+    const routeFromStationExistsInFrom = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("fromstationid" ,fromStationId )
+    .first();
+    const routeToStationExistsInFrom = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("fromstationid" ,toStationId )
+    .first();
+    const routeFromStationExistsInTo = await db
+    .select("*")
+    .from("se_project.routes")
+    .where("tostationid" ,fromStationId )
+    .first();
+    if(existingBackwardRoute){
+      return res.status(200).send("Route Deleted Succesfully" );
+   }
 
-  if (!existingStation) {
-    // If the station does not exist, return an HTTP not found code.
-    return res.status(404).send("Station does not exist");
-  }
-
-  // Delete the station from the database.
-  await db
-    .delete("se_project.stations")
-    .where("id", stationId);
-
-  // Return a success message.
-  res.status(200).send("Station deleted successfully");
-});
-app.get("/users", async function (req, res) {
-  try {
-     const user = await getUser(req);
-    const users = await db.select('*').from("se_project.users")
+   
+   const routeFromExists = await db
+      .select("*")
+      .from("se_project.routes")
+      .where("fromstationid" ,fromStationId ).orWhere("tostationid", fromStationId)
+      .first();
       
-    return res.status(200).json(users);
-  } catch (e) {
-    console.log(e.message);
-    return res.status(400).send("Could not get users");
-  }
+      const routeToExists = await db
+      .select("*")
+      .from("se_project.routes")
+      .where("fromstationid" ,toStationId ).orWhere("tostationid", toStationId)
+      .first();
+
+      if(!routeFromExists){
+        await db("se_project.stations")
+        .where("id", fromStationId)
+        .update({
+        stationstatus: "unconnected"
+      });
+      }
+      if(!routeToExists){
+        await db("se_project.stations")
+        .where("id", toStationId)
+        .update({
+        stationstatus: "unconnected"
+      });
+    }
+
+    const countToFrom=await db
+    .count("*")
+    .from("se_project.routes").
+    where("fromstationid" ,toStationId);
+
+    const countFromFrom=await db
+    .count("*")
+    .from("se_project.routes").
+    where("fromstationid" ,fromStationId);
+
+    const countFromTo=await db
+    .count("*")
+    .from("se_project.routes").
+    where("tostationid" ,fromStationId );
+
+    const countToTo=await db
+    .count("*")
+    .from("se_project.routes").
+    where("tostationid" ,toStationId );
+    if((countToFrom[0].count)>=2||(countToTo[0].count)>=2){
+      return res.status(200).send("Route Deleted Succesfully" );    
+    }
+    if((countFromTo[0].count)>=2||(countFromFrom[0].count)>=2){
+      return res.status(200).send("Route Deleted Succesfully" );  
+    }
+
+  if(routeToStationExistsInFrom){
+    await db("se_project.stations")
+      .where("id", toStationId)
+      .update({
+      stationposition: "start"
+  });
+}
+  else if(routeToStationExistsInTo){
+  await db("se_project.stations")
+      .where("id", toStationId)
+      .update({
+      stationposition: "end"
+ });
+}
  
+if(routeFromStationExistsInFrom){
+  await db("se_project.stations")
+    .where("id", fromStationId)
+    .update({
+    stationposition: "start"
 });
-*/
-  
-};
+}
+else if(routeFromStationExistsInTo){
+await db("se_project.stations")
+    .where("id", fromStationId)
+    .update({
+    stationposition: "end"
+});
+}
+return res.status(200).send("Route deleted successfully");
+});
+}
