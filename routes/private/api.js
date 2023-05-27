@@ -86,7 +86,7 @@ const getPrice = async function(startStation = 1, endStation = 2){
     }
     curr = queue.shift();
   }
-  const distance = 0;
+  var distance = 0;
   for (let i = 0; i < visited.length; i++) {
     if(parseInt(endStation) == visited[i].station){
       distance = visited[i].distance;
@@ -164,15 +164,15 @@ const getPrice = async function(startStation = 1, endStation = 2){
   });
 
   //pay sub online
-  app.post("/api/v1/payment/subscription", async function (req, res) {
+  app.post("/api/v1/payment/subscription/:purchasedId", async function (req, res) {
     
-    const purchasedID =req.query.purchasedId;
+    const purchasedID =req.params.purchasedId;
+    console.log(purchasedID);
     const CCN = req.body.creditCardNumber;
     const HOWN= req.body.holderName;
     const ammo= req.body.payedAmount;
     const typo= req.body.subType;
     const Zid= req.body.zoneId;
-   const userD= 1;
     const userd=await getUser(req);
     const userdd=userd.id;
  const inserto={
@@ -221,14 +221,16 @@ const subExists = await db
 
   });
 
-  app.post("/api/v1/payment/ticket", async function (req, res) {
-    const purchasedID =req.query.purchasedId;
+  app.post("/api/v1/payment/ticket/:purchasedId", async function (req, res) {
+    const purchasedID =req.params.purchasedId;
     const CCN = req.body.creditCardNumber;
     const HOWN= req.body.holderName;
     const ammo= req.body.payedAmount;
    const origino=req.body.origin;
    const destinationo=req.body.destination;
    const tripDateo=req.body.tripDate;
+   const tripTmp = new Date(tripDateo);
+   const tripCompare = tripTmp.toISOString();
    const userdo=await getUser(req);
     const userpd=userdo.id;
     ///////////////////////////
@@ -241,7 +243,7 @@ const subExists = await db
    .select("id")
    .from("se_project.stations")
    .where("stationname", destinationo);
-    const prico=getPrice(og,dn);
+    const prico=await getPrice(og[0].id,dn[0].id);
     if(ammo!=prico){return res.status(400).send("invalid funds")}
     else{//the rest of the code
     } 
@@ -251,7 +253,7 @@ const subExists = await db
    .from("se_project.subsription")
    .where("userid", userpd);
  if (!isEmpty(subExists)) {
-   return res.status(400).send("sub exists");
+   return res.status(400).send("You have a Subscription don't waste money");
  }
  else{
  const insertog={ 
@@ -264,7 +266,7 @@ const subExists = await db
 const suyExists = await db
    .select("*")
    .from("se_project.tickets")
-   .where("userid", userpd).andWhere("origin",origino).andWhere("destination",destinationo);
+   .where("userid", userpd).andWhere("origin",origino).andWhere("destination",destinationo).andWhere("tripdate", tripCompare);
  if (!isEmpty(suyExists)) {
    return res.status(400).send("ticket already bought exists"); 
  }
@@ -280,19 +282,18 @@ const suyExists = await db
   // subid:0
 };
  const ao= await db("se_project.tickets").insert(insertouo).returning("id");
-   const po=parseInt(ao);  
+   const po= ao[0]; 
 ///////////////////////////////////////////////////////
 const inserta={
 userid:userpd,
 status:"upcoming",
 origin:origino,
 destination:destinationo,
-ticketid:4,//po, 
+ticketid:po,//po, 
 tripdate:tripDateo 
 };
  const ppo= await db("se_project.rides").insert(inserta).returning("*")
- res.status(200).send("ticket paid"); 
- res.status(200).send("ticket paid\n"+tripDateo+"\n"+origino+"\n"+destinationo);
+ return res.status(200).send("ticket paid\nTrip Date: "+tripDateo+"\nOrigin: "+origino+"\nDestination: "+destinationo);
  
  
 }
@@ -304,6 +305,8 @@ app.post("/api/v1/tickets/purchase/subscription", async function (req, res) {
     const origink=req.body.origio;
     const desitinationk=req.body.destin;
     const tripd=req.body.date;
+    const tripTmp = new Date(tripd);
+    const tripCompare = tripTmp.toISOString();
     const userd=await getUser(req);
     const userod=userd.id;
      ///////////////////////////
@@ -316,11 +319,13 @@ app.post("/api/v1/tickets/purchase/subscription", async function (req, res) {
      .select("id")
      .from("se_project.stations")
      .where("stationname", desitinationk);
-      const prico=getPrice(og,dn);
-      if(ammo!=prico){return res.status(400).send("invalid funds")}
-      else{//the rest of the code
-      } 
-      ////////////////////////////
+      const prico=await getPrice(og[0].id,dn[0].id);
+      const zone = await db.select("zoneid").from("se_project.subsription").where("id", subid);
+      console.log(zone[0].zoneid);
+      const zonePrice = await db.select("price").from("se_project.zones").where("id", zone[0].zoneid);
+      console.log(zonePrice[0].price);
+      console.log(prico);
+      if(zonePrice[0].price!=prico){return res.status(400).send("Invalid Subscription");}
 const subExists = await db
  .select("*")
  .from("se_project.subsription")
@@ -332,7 +337,7 @@ else{
   const suyExists = await db
   .select("*")
   .from("se_project.tickets")
-  .where("userid", userod).andWhere("origin",origink).andWhere("destination",desitinationk);
+  .where("userid", userod).andWhere("origin",origink).andWhere("destination",desitinationk).andWhere("tripdate", tripCompare);
 if (!isEmpty(suyExists)) {
   return res.status(400).send("ticket already bought exists");
 }
@@ -346,7 +351,7 @@ else{ const ino={
    
 };
  const apoo= await db("se_project.tickets").insert(ino).returning("id");
-    const apo=parseInt(apoo);
+    const apo=parseInt(apoo[0]);
 ///////////////////////////////////////////////////////
 const insertak={
 userid:userod,
@@ -356,8 +361,15 @@ destination:desitinationk,
 tripdate:tripd, 
 ticketid:apo
 };
+
  const ppo= await db("se_project.rides").insert(insertak).returning("*")
- res.status(200).send("ticket paid\n"+tripd+"\n"+origink+"\n"+desitinationk);
+ const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subid);
+ await db("se_project.subsription")
+      .where("id", subid)
+      .update({
+        nooftickets : prevSub[0].nooftickets - 1
+      });
+ return res.status(200).send("ticket paid\nTrip Date: "+tripd+"\nOrigin: "+origink+"\nDestination: "+desitinationk);
  }
  }
 });
