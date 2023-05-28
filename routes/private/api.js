@@ -15,20 +15,20 @@ const getUser = async function (req) {
     .where("token", sessionToken)
     .innerJoin(
       "se_project.users",
-      "se_project.sessions.userId",
+      "se_project.sessions.userid",
       "se_project.users.id"
     )
     .innerJoin(
       "se_project.roles",
-      "se_project.users.roleId",
+      "se_project.users.roleid",
       "se_project.roles.id"
     )
     .first();
 
   console.log("user =>", user);
-  user.isNormal = user.roleId === roles.user;
-  user.isAdmin = user.roleId === roles.admin;
-  user.isSenior = user.roleId === roles.senior;
+  user.isNormal = user.roleid === roles.user;
+  user.isAdmin = user.roleid === roles.admin;
+  user.isSenior = user.roleid === roles.senior;
   return user;
 };
 
@@ -616,6 +616,8 @@ module.exports = function (app) {
       console.log(e.message);
       return res.status(400).send("Could not add route");
     }
+
+    //If statements go brrrr(update stations status)
   });
 
   app.put("/api/v1/route/:routeId", async function (req, res) {
@@ -634,16 +636,16 @@ module.exports = function (app) {
       await db("se_project.routes")
         .where("id", routeId)
         .update({
-          routename: routeName
+          routename: routeName,
         })
         .returning("*");
       // Return a success message.
-      res.status(200).send("Route updated successfully");
+      return res.status(200).send("Route updated successfully");
 
     }
     catch (e) {
       console.log(e.message);
-      res.status(400).json({ error: "Unable to update Route name.", });
+      return res.status(400).json({ error: "Unable to update Route name.", });
     }
   });
 
@@ -780,8 +782,8 @@ module.exports = function (app) {
   //pay sub online
   app.post("/api/v1/payment/subscription/:purchasedId", async function (req, res) {
 
-    const purchasedID = req.params.purchasedId;
-    console.log(purchasedID);
+    const { purchasedId } = req.params;
+    console.log(purchasedId);
     const CCN = req.body.creditCardNumber;
     const HOWN = req.body.holderName;
     const ammo = req.body.payedAmount;
@@ -790,7 +792,7 @@ module.exports = function (app) {
     const userd = await getUser(req);
     const userdd = userd.id;
     const inserto = {
-      purchasedid: purchasedID,
+      purchasedid: purchasedId,
       //amount from get ammount or body?
       amount: ammo,
       userid: userdd,
@@ -836,7 +838,7 @@ module.exports = function (app) {
   });
 
   app.post("/api/v1/payment/ticket/:purchasedId", async function (req, res) {
-    const purchasedID = req.params.purchasedId;
+    const { purchasedId } = req.params;
     const CCN = req.body.creditCardNumber;
     const HOWN = req.body.holderName;
     const ammo = req.body.payedAmount;
@@ -871,7 +873,7 @@ module.exports = function (app) {
     }
     else {
       const insertog = {
-        purchasedid: purchasedID,
+        purchasedid: purchasedId,
         //amount from get ammount or body?
         amount: ammo,
         userid: userpd,
@@ -935,11 +937,8 @@ module.exports = function (app) {
       .from("se_project.stations")
       .where("stationname", desitinationk);
     const prico = await getPrice(og[0].id, dn[0].id);
-    const zone = await db.select("zoneid").from("se_project.subsription").where("id", subid);
-    console.log(zone[0].zoneid);
-    const zonePrice = await db.select("price").from("se_project.zones").where("id", zone[0].zoneid);
-    console.log(zonePrice[0].price);
-    console.log(prico);
+    const zone = await db.select("zoneid").from("se_project.subsription").where("id", subid).first();
+    const zonePrice = await db.select("price").from("se_project.zones").where("id", zone.zoneid);
     if (zonePrice[0].price != prico) { return res.status(400).send("Invalid Subscription"); }
     const subExists = await db
       .select("*")
@@ -992,11 +991,12 @@ module.exports = function (app) {
 
   app.put("/api/v1/requests/senior/:requestId", async function (req, res) {
 
-    const reqid = req.params;
+    const { requestId } = req.params;
+    console.log(requestId);
     const reqExists = await db
       .select("*")
       .from("se_project.senior_requests")
-      .where("id", reqid);
+      .where("id", requestId);
     if (isEmpty(reqExists)) {
       return res.status(400).send("request doesn't exist");
     }
@@ -1004,17 +1004,17 @@ module.exports = function (app) {
     try {
 
       await db("se_project.senior_requests")
-        .where("id", reqid)
+        .where("id", requestId)
         .update({
-          status: req.body.seniorStaus
+          status: (req.body.seniorStaus).toUpperCase(),
         })
         .returning("*");
 
 
-      return res.status(200).send("done");
+      return res.status(200).send("successfully became old man");
     } catch (e) {
       console.log(e.message);
-      return res.status(400).send("error in query");
+      return res.status(400).send("Couldn't update status");
     }
 
   });
@@ -1025,11 +1025,11 @@ module.exports = function (app) {
 
   app.put("/api/v1/requests/refunds/:requestId", async function (req, res) {
 
-    const reqid = req.params;
+    const { requestId } = req.params;
     const reqExists = await db
       .select("*")
       .from("se_project.refund_requests")
-      .where("id", reqid);
+      .where("id", requestId);
     if (isEmpty(reqExists)) {
       return res.status(400).send("request doesn't exist");
     }
@@ -1039,7 +1039,7 @@ module.exports = function (app) {
     try {
 
       await db("se_project.refund_requests")
-        .where("id", reqid)
+        .where("id", requestId)
         .update({
           status: status
         })
@@ -1049,18 +1049,16 @@ module.exports = function (app) {
         const ticket = await db
           .select("ticketid")
           .from("se_project.refund_requests")
-          .where("id", reqid)
+          .where("id", requestId)
           .first();
-        console.log("ticket: " + ticket);
 
         const subId = await db
           .select("subid")
           .from("se_project.tickets")
-          .where("id", ticket)
+          .where("id", ticket.ticketid)
           .first();
-        console.log("subId: " + subId);
 
-        if (subId != undefined) {
+        if (subId.subid != undefined) {
           const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subId);
           await db("se_project.subsription")
             .where("id", subId)
@@ -1070,17 +1068,17 @@ module.exports = function (app) {
         }
 
         await db("se_project.rides")
-          .where("ticketid", ticket)
+          .where("ticketid", ticket.ticketid)
           .delete();
 
-          //delete ticket confuse *caveman sounds*
+        //delete ticket confuse *caveman sounds*
       }
 
 
       return res.status(200).send("done");
     } catch (e) {
       console.log(e.message);
-      return res.status(400).send("error in query");
+      return res.status(400).send("Couldn't Refund Ticket");
     }
 
 
@@ -1090,8 +1088,8 @@ module.exports = function (app) {
 
   });
 
-  app.put("/api/v1/zones", async function (req, res) {
-    const zoneId = req.query.zoneId;
+  app.put("/api/v1/zones/:zoneId", async function (req, res) {
+    const {zoneId} = req.params;
     const zoneExists = await db
       .select("*")
       .from("se_project.zones")
