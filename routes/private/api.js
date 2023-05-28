@@ -964,7 +964,7 @@ module.exports = function (app) {
           destination: desitinationk,
           tripdate: tripd,
           userid: userod,
-
+          subid: subid,
         };
         const apoo = await db("se_project.tickets").insert(ino).returning("id");
         const apo = parseInt(apoo[0]);
@@ -978,7 +978,7 @@ module.exports = function (app) {
           ticketid: apo
         };
 
-        const ppo = await db("se_project.rides").insert(insertak).returning("*")
+        await db("se_project.rides").insert(insertak);
         const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subid);
         await db("se_project.subsription")
           .where("id", subid)
@@ -992,7 +992,7 @@ module.exports = function (app) {
 
   app.put("/api/v1/requests/senior/:requestId", async function (req, res) {
 
-    const { requestId: reqid } = req.params;
+    const reqid = req.params;
     const reqExists = await db
       .select("*")
       .from("se_project.senior_requests")
@@ -1025,7 +1025,7 @@ module.exports = function (app) {
 
   app.put("/api/v1/requests/refunds/:requestId", async function (req, res) {
 
-    const { requestId: reqid } = req.params;
+    const reqid = req.params;
     const reqExists = await db
       .select("*")
       .from("se_project.refund_requests")
@@ -1034,14 +1034,47 @@ module.exports = function (app) {
       return res.status(400).send("request doesn't exist");
     }
 
+    const status = req.body.refundStaus;
+
     try {
 
       await db("se_project.refund_requests")
         .where("id", reqid)
         .update({
-          status: req.body.refundStaus
+          status: status
         })
         .returning("*");
+
+      if (status.toUpperCase() == "ACCEPTED") {
+        const ticket = await db
+          .select("ticketid")
+          .from("se_project.refund_requests")
+          .where("id", reqid)
+          .first();
+        console.log("ticket: " + ticket);
+
+        const subId = await db
+          .select("subid")
+          .from("se_project.tickets")
+          .where("id", ticket)
+          .first();
+        console.log("subId: " + subId);
+
+        if (subId != undefined) {
+          const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subId);
+          await db("se_project.subsription")
+            .where("id", subId)
+            .update({
+              nooftickets: prevSub[0].nooftickets + 1
+            });
+        }
+
+        await db("se_project.rides")
+          .where("ticketid", ticket)
+          .delete();
+
+          //delete ticket confuse *caveman sounds*
+      }
 
 
       return res.status(200).send("done");
