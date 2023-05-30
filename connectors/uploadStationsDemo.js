@@ -108,4 +108,4 @@ async function uploadR() {
 }
 //uploadS(); //first to run
 //uploadR(); //second
-//uploadSR(); //third
+uploadSR(); //third
