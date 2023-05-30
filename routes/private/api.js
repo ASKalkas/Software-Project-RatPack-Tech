@@ -35,17 +35,13 @@ const getUser = async function (req) {
 //Helper method for checkPrice endpoint api
 //gets price based on shortest distance from originStation to destinationStation
 const getPrice = async function (startStation = 1, endStation = 2) {
-  const numStations = await db
-    .count("*")
-    .from("se_project.stations");
-
   var visited = [];
   var queue = [];
   queue.push({ station: parseInt(startStation), distance: 0 });
 
   let curr = queue.shift();
   for (let i = 0; curr != undefined; i++) {
-    visited[visited.length] = curr;
+    visited.push(curr);
 
     const neighbours = await db
       .select("tostationid")
@@ -98,6 +94,81 @@ const getPrice = async function (startStation = 1, endStation = 2) {
       return zones[length - 1].price;
     }
   }
+}
+
+//Helper method for ticket payments endpoint
+//gets the transfer stations passed during trip from originStation to destinationStation
+const getTransferStations = async function (startStation = 1, endStation = 2) {
+  var visited = [];
+  var stack = [];
+  var transfer = [];
+
+  stack.push(parseInt(startStation));
+
+  let curr = stack.pop();
+  let isFirst = true;
+  let flag = false;
+  while (curr != undefined) {
+    flag = false;
+    for (let k = 0; k < visited.length; k++) {
+
+      const visitedStation = visited[k];
+      if (parseInt(curr) == parseInt(visitedStation)) {
+        flag = true;
+      }
+    } if (flag) {
+      curr = stack.pop();
+      continue;
+    }
+
+    while (transfer.length > 0 && transfer[0].length > stack.length) {
+      console.log(stack.length);
+      transfer.shift();
+    }
+
+    const isTransfer = await db
+      .select("stationtype")
+      .from("se_project.stations")
+      .where("id", curr)
+      .first();
+
+    if (isTransfer.stationtype == "transfer" && !isFirst) {
+      transfer.push({ station: curr, length: stack.length });
+    }
+
+    visited.push(curr);
+
+    const neighbours = await db
+      .select("tostationid")
+      .from("se_project.routes")
+      .where("fromstationid", curr);
+
+    for (let j = 0; j < neighbours.length; j++) {
+      flag = false;
+      const station = neighbours[j].tostationid;
+
+      for (let k = 0; k < visited.length; k++) {
+        const visitedStation = visited[k];
+        if (parseInt(station) == parseInt(visitedStation)) {
+          flag = true;
+        }
+      }
+
+      if (flag) {
+        continue;
+      }
+
+      if (station == endStation) {
+        return transfer;
+      }
+
+      stack.push(station);
+    }
+    curr = stack.pop();
+    isFirst = false;
+  }
+
+  return null;
 }
 module.exports = function (app) {
   // example
@@ -853,13 +924,15 @@ module.exports = function (app) {
     const og = await db
       .select("id")
       .from("se_project.stations")
-      .where("stationname", origino);
+      .where("stationname", origino)
+      .first();
     //
     const dn = await db
       .select("id")
       .from("se_project.stations")
-      .where("stationname", destinationo);
-    const prico = await getPrice(og[0].id, dn[0].id);
+      .where("stationname", destinationo)
+      .first();
+    const prico = await getPrice(og.id, dn.id);
     if (ammo != prico) { return res.status(400).send("invalid funds") }
     else {//the rest of the code
     }
@@ -910,8 +983,18 @@ module.exports = function (app) {
           tripdate: tripDateo
         };
         const ppo = await db("se_project.rides").insert(inserta).returning("*")
-        return res.status(200).send("ticket paid\nTrip Date: " + tripDateo + "\nOrigin: " + origino + "\nDestination: " + destinationo);
-
+        const transferStations = await getTransferStations(og.id, dn.id);
+        let string = "";
+        if (transferStations.length > 0) {
+          string = "ticket paid\nTrip Date: " + tripDateo + "\nOrigin: " + origino + "\nDestination: " + destinationo + "\nTransfer Stations: ";
+          for (let i = 0; i < transferStations.length; i++) {
+            string += transferStations.shift().station + ", "
+          }
+          string = string.slice(0, -2);
+        } else {
+          string = "ticket paid\nTrip Date: " + tripDateo + "\nOrigin: " + origino + "\nDestination: " + destinationo;
+        }
+        return res.status(200).send(string);
 
       }
     }
@@ -930,13 +1013,14 @@ module.exports = function (app) {
     const og = await db
       .select("id")
       .from("se_project.stations")
-      .where("stationname", origink);
-    //
+      .where("stationname", origink)
+      .first();
     const dn = await db
       .select("id")
       .from("se_project.stations")
-      .where("stationname", desitinationk);
-    const prico = await getPrice(og[0].id, dn[0].id);
+      .where("stationname", desitinationk)
+      .first();
+    const prico = await getPrice(og.id, dn.id);
     const zone = await db.select("zoneid").from("se_project.subsription").where("id", subid).first();
     const zonePrice = await db.select("price").from("se_project.zones").where("id", zone.zoneid);
     if (zonePrice[0].price != prico) { return res.status(400).send("Invalid Subscription"); }
@@ -984,7 +1068,18 @@ module.exports = function (app) {
           .update({
             nooftickets: prevSub[0].nooftickets - 1
           });
-        return res.status(200).send("ticket paid\nTrip Date: " + tripd + "\nOrigin: " + origink + "\nDestination: " + desitinationk);
+        const transferStations = await getTransferStations(og.id, dn.id);
+        let string = "";
+        if (transferStations.length > 0) {
+          string = "ticket paid\nTrip Date: " + tripd + "\nOrigin: " + origink + "\nDestination: " + desitinationk + "\nTransfer Stations: ";
+          for (let i = 0; i < transferStations.length; i++) {
+            string += transferStations.shift().station + ", "
+          }
+          string = string.slice(0, -2);
+        } else {
+          string = "ticket paid\nTrip Date: " + tripd + "\nOrigin: " + origink + "\nDestination: " + desitinationk;
+        }
+        return res.status(200).send(string);
       }
     }
   });
@@ -1089,7 +1184,7 @@ module.exports = function (app) {
   });
 
   app.put("/api/v1/zones/:zoneId", async function (req, res) {
-    const {zoneId} = req.params;
+    const { zoneId } = req.params;
     const zoneExists = await db
       .select("*")
       .from("se_project.zones")
