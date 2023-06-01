@@ -666,29 +666,158 @@ module.exports = function (app) {
   app.post("/api/v1/route", async function (req, res) {
 
     // Check if user already exists in the system
+    const routeName = req.body.routename
+    const fromStationId = req.body.fromstationid
+    const toStationId = req.body.tostationid
     const routeExists = await db
       .select("*")
       .from("se_project.routes")
-      .where("routename", req.body.routeName);
+      .where("routename", routeName);
+    //const fromStationId=req.body.new
+    //const toStationId= routeExists.tostationid
     if (!isEmpty(routeExists)) {
       return res.status(400).send("route exists");
     }
 
     const newRoute = {
-      fromstationid: req.body.newStationId,
-      tostationid: req.body.connectedStationId,
-      routename: req.body.routeName,
+      fromstationid: fromStationId,
+      tostationid: toStationId,
+      routename: routeName,
     };
     try {
-      const route = await db("se_project.routes").insert(newRoute).returning("*");
+      const route = await db("se_project.routes").insert(newRoute);//.returning("*");
+
+      const checkToIdInStationTable = await db
+        .select("*")
+        .from("se_project.stations")
+        .where("id", toStationId)
+        .first();
+      const checkFromIdInStationTable = await db
+        .select("*")
+        .from("se_project.stations")
+        .where("id", fromStationId)
+        .first();
+      if (checkFromIdInStationTable.stationstatus == "unconnected") {
+        await db("se_project.stations")
+          .where("id", fromStationId)
+          .update({
+            stationstatus: "new"
+          });
+      }
+      if (checkToIdInStationTable.stationstatus == "unconnected") {
+        await db("se_project.stations")
+          .where("id", toStationId)
+          .update({
+            stationstatus: "new"
+          });
+      }
+
+      const routeToStationExistsInTo = await db
+        .select("*")
+        .from("se_project.routes")
+        .where("tostationid", toStationId)
+        .first();
+      const routeFromStationExistsInFrom = await db
+        .select("*")
+        .from("se_project.routes")
+        .where("fromstationid", fromStationId)
+        .first();
+      const routeToStationExistsInFrom = await db
+        .select("*")
+        .from("se_project.routes")
+        .where("fromstationid", toStationId)
+        .first();
+      const routeFromStationExistsInTo = await db
+        .select("*")
+        .from("se_project.routes")
+        .where("tostationid", fromStationId)
+        .first();
+
+      if (routeToStationExistsInFrom) {
+        await db("se_project.stations")
+          .where("id", toStationId)
+          .update({
+            stationposition: "start"
+          });
+      }
+      else if (routeToStationExistsInTo) {
+        await db("se_project.stations")
+          .where("id", toStationId)
+          .update({
+            stationposition: "end"
+          });
+      }
+
+      if (routeFromStationExistsInFrom) {
+        await db("se_project.stations")
+          .where("id", fromStationId)
+          .update({
+            stationposition: "start"
+          });
+      }
+      else if (routeFromStationExistsInTo) {
+        await db("se_project.stations")
+          .where("id", fromStationId)
+          .update({
+            stationposition: "end"
+          });
+      }
+
+      const countToFrom = await db
+        .count("*")
+        .from("se_project.routes").
+        where("fromstationid", toStationId);
+
+      const countFromFrom = await db
+        .count("*")
+        .from("se_project.routes").
+        where("fromstationid", fromStationId);
+
+      const countFromTo = await db
+        .count("*")
+        .from("se_project.routes").
+        where("tostationid", fromStationId);
+
+      const countToTo = await db
+        .count("*")
+        .from("se_project.routes").
+        where("tostationid", toStationId);
+
+      if ((countToFrom[0].count) >= 2 || (countToTo[0].count) >= 2) {
+        await db("se_project.stations")
+          .where("id", toStationId)
+          .update({
+            stationposition: "middle"
+          });
+      }
+      if ((countFromTo[0].count) >= 2 || (countFromFrom[0].count) >= 2) {
+        await db("se_project.stations")
+          .where("id", fromStationId)
+          .update({
+            stationposition: "middle"
+          });
+      }
+      if ((countToFrom[0].count) > 2 || (countToTo[0].count) > 2) {
+        await db("se_project.stations")
+          .where("id", toStationId)
+          .update({
+            stationtype: "transfer"
+          });
+      }
+      if ((countFromTo[0].count) > 2 || (countFromFrom[0].count) > 2) {
+        await db("se_project.stations")
+          .where("id", fromStationId)
+          .update({
+            stationtype: "transfer"
+          });
+      }
+
 
       return res.status(200).json(route);
     } catch (e) {
       console.log(e.message);
       return res.status(400).send("Could not add route");
     }
-
-    //If statements go brrrr(update stations status)
   });
 
   app.put("/api/v1/route/:routeId", async function (req, res) {
@@ -811,6 +940,20 @@ module.exports = function (app) {
       .count("*")
       .from("se_project.routes").
       where("tostationid", toStationId);
+    if ((countToFrom[0].count) < 3 || (countToTo[0].count) < 3) {
+      await db("se_project.stations")
+        .where("id", toStationId)
+        .update({
+          stationtype: "normal"
+        });
+    }
+    if ((countFromTo[0].count) < 3 || (countFromFrom[0].count) < 3) {
+      await db("se_project.stations")
+        .where("id", fromStationId)
+        .update({
+          stationtype: "normal"
+        });
+    }
     if ((countToFrom[0].count) >= 2 || (countToTo[0].count) >= 2) {
       return res.status(200).send("Route Deleted Succesfully");
     }
@@ -848,64 +991,6 @@ module.exports = function (app) {
         });
     }
     return res.status(200).send("Route deleted successfully");
-  });
-
-  //pay sub online
-  app.post("/api/v1/payment/subscription/:purchasedId", async function (req, res) {
-
-    const { purchasedId } = req.params;
-    console.log(purchasedId);
-    const CCN = req.body.creditCardNumber;
-    const HOWN = req.body.holderName;
-    const ammo = req.body.payedAmount;
-    const typo = req.body.subType;
-    const Zid = req.body.zoneId;
-    const userd = await getUser(req);
-    const userdd = userd.id;
-    const inserto = {
-      purchasedid: purchasedId,
-      //amount from get ammount or body?
-      amount: ammo,
-      userid: userdd,
-      purchasetype: "subscription",
-      // zoneid:Zid
-    };
-    const subExists = await db
-      .select("*")
-      .from("se_project.subsription")
-      .where("userid", userdd).andWhere("zoneid", Zid);
-    if (isEmpty(subExists)) {
-      const niko = {
-        zoneid: Zid,
-        subtype: "quartrly",
-        nooftickets: 0,
-        userid: userdd
-      }
-      const yoo = await db("se_project.subsription").insert(niko).returning("*");
-    }
-
-    const ppo = await db("se_project.transactions").insert(inserto).returning("*");
-
-    if (typo == "annual") {
-      const ddo = await db("se_project.subsription")
-        .where("zoneid", Zid).andWhere("userid", userdd)
-        .update({ nooftickets: 100, subtype: "annual" });
-    }
-    else {
-      //duuno if month or monthly ba3den
-      if (typo == "monthly") {
-        const ddo = await db("se_project.subsription")
-          .where("zoneid", Zid).andWhere("userid", userdd)
-          .update({ nooftickets: 50, subtype: "monthly" });
-      }
-      else {
-        const ddo = await db("se_project.subsription")
-          .where("zoneid", Zid).andWhere("userid", userdd)
-          .update({ nooftickets: 10, subtype: "quartrly" });
-      }
-    }
-    res.status(200).send("subscription paid");
-
   });
 
   app.post("/api/v1/payment/ticket/:purchasedId", async function (req, res) {
