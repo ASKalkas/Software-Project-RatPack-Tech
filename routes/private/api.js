@@ -442,30 +442,30 @@ module.exports = function (app) {
             .select("*")
             .from("se_project.routes")
             .where("tostationid", all[i].tostationid)
-            .andWhere("routename", "new")
-            .first();
+            .andWhere("routename", "new");
+          len = routeid.length - 1;
           const rid = await db
             .select("*")
             .from("se_project.routes")
             .where("fromstationid", all[i].tostationid)
-            .andWhere("routename", "new")
-            .first();
+            .andWhere("routename", "new");
+          len2 = rid.length - 1;
           //create new stationroutes
           const stationroute = {
             stationid: newtransferid,
-            routeid: routeid.id,
+            routeid: routeid[len].id,
           };
           const sr = {
             stationid: all[i].tostationid,
-            routeid: routeid.id,
+            routeid: routeid[len].id,
           };
           const stationro = {
             stationid: newtransferid,
-            routeid: rid.id,
+            routeid: rid[len2].id,
           };
           const ss = {
             stationid: all[i].tostationid,
-            routeid: rid.id,
+            routeid: rid[len2].id,
           };
           //insert the new station route
           await db("se_project.stationroutes").insert(stationroute).returning("*");
@@ -567,36 +567,39 @@ module.exports = function (app) {
           .select("*")
           .from("se_project.routes")
           .where("fromstationid", nextid[1].tostationid)
-          .andWhere("routename", "new")
-          .first();
+          .andWhere("tostationid", previd.fromstationid)
+          .andWhere("routename", "new");
         //get route id
+        len = routeid.length - 1
         const rid = await db
           .select("*")
           .from("se_project.routes")
           .where("tostationid", nextid[1].tostationid)
-          .andWhere("routename", "new")
-          .first();
+          .andWhere("fromstationid", previd.fromstationid)
+          .andWhere("routename", "new");
+        len2 = rid.length - 1;
         const stationroute = {
           stationid: nextid[1].tostationid,
-          routeid: routeid.id,
+          routeid: routeid[len].id,
         };
         const sr = {
           stationid: previd.fromstationid,
-          routeid: routeid.id,
+          routeid: routeid[len].id,
         };
         const stationr = {
           stationid: nextid[1].tostationid,
-          routeid: rid.id,
+          routeid: rid[len2].id,
         };
         const sroute = {
           stationid: previd.fromstationid,
-          routeid: rid.id,
+          routeid: rid[len2].id,
         };
         //insert the new station route
+        await db("se_project.stationroutes").insert(stationr).returning("*");
+        await db("se_project.stationroutes").insert(sroute).returning("*");
         await db("se_project.stationroutes").insert(stationroute).returning("*");
         await db("se_project.stationroutes").insert(sr).returning("*");
-        await db("se_project.stationroutes").insert(sroute).returning("*");
-        await db("se_project.stationroutes").insert(sroute).returning("*");
+
       }
       //deleting routes and stationroutes
       //done automatically with delete cascade
@@ -608,23 +611,6 @@ module.exports = function (app) {
 
     // Return a success message.
     res.status(200).send("Station deleted successfully");
-  });
-
-  app.post("/api/v1/senior/request", async function (req, res) {
-    try {
-      const user = await getUser(req);
-      const NewSreq = {
-        status: "pending",
-        userid: user.id,
-        nationalid: parseInt(req.body.nationalid)
-      };
-      const Sreq = await db("se_project.senior_requests").insert(NewSreq).returning("*");
-      return res.status(200).json(Sreq);
-
-    } catch (e) {
-      console.log(e.message);
-      return res.status(400).send("Could not complete action");
-    }
   });
 
   app.post("/api/v1/refund/:ticketId", async function (req, res) {
