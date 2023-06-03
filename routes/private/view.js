@@ -37,10 +37,10 @@ module.exports = function(app) {
   });
 
   // Register HTTP endpoint to render /courses page
-  app.get('/stations', async function(req, res) {
+  app.get('/manage/stations', async function(req, res) {
     const user = await getUser(req);
     const stations = await db.select('*').from('se_project.stations');
-    return res.render('stations', { ...user, stations });
+    return res.render('manage_stations', { ...user, stations });
   });
   app.get('/resetPassword', async function(req, res) {
     return res.render('resetpassword');
@@ -48,12 +48,12 @@ module.exports = function(app) {
   app.get('/manage', async function(req, res) {
     return res.render('manage');
   });
-  app.get('/create', async function(req, res) {
-    return res.render('create');
+  app.get('/manage/stations/create', async function(req, res) {
+    return res.render('manage_stations_create');
   });
-  app.get('/edit/:stationId', async function(req, res) {
+  app.get('/manage/stations/edit/:stationId', async function(req, res) {
     const stationId = req.params.stationId;
   
-    res.render('edit', { stationId });
+    res.render('manage_stations_edit', { stationId });
 });
 };

@@ -12,7 +12,7 @@
           $(document).ready(function(){    
              $("#btnAddStation").click(function() {
              //  console.log("help");
-             location.href = '/create';
+             location.href = 'stations/create';
             });    
               var buttons = $(".edit");
            buttons.on("click", edit);
@@ -22,7 +22,7 @@
     }); 
     function edit() {
     const stationId = $(this).closest("tr").find("td:first-child").text();
-  location.href = "/edit/" + stationId;
+  location.href = "stations/edit/" + stationId;
    }      
  function deleteStation() {
   const stationId = $(this).closest("tr").find("td:first-child").text();
