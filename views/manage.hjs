@@ -9,11 +9,17 @@
   </head>
   <body>
       <script>
-        </script> 
+      $(document).ready(function() {
+        const sessionToken = document.cookie.includes('session_token');
+        if (!sessionToken) {
+          location.href = '/';
+        }
+      });
+      </script> 
           <nav class="navbar navbar-inverse" style="padding-left:130px;">
           <ul class="nav navbar-nav">
             <li class="active"><a href="/dashboard">Home</a></li>
-        
+               <li><a href="/stations">Stations</a></li>
           </ul>
             </nav>
       </div>

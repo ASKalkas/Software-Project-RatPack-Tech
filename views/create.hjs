@@ -11,54 +11,45 @@
   <body>
     <script>
           $(document).ready(function(){    
-              $("#reset").click(function() {
-                 const newPassword= $('#newPassword').val();
+               $("#create").click(function() {
+                 const stationName= $('#stationName').val();
                  
         const data = {
-         newPassword,
+         stationName,
         };
-        
-        $.ajax({
-          type: "PUT",
-          url: '/api/v1/password/reset',
+           $.ajax({
+          type: "POST",
+          url: '/api/v1/station',
           data,
           success: function(serverResponse) {
             if(serverResponse) {
-              alert('Password reset successfully');
-               location.href = '/dashboard';
+              alert('Station created successfully');
+               location.href = '/manage';
             }
           },
           error: function(errorResponse) {
             if(errorResponse) {
-              alert(`Error Cannot reset password: ${errorResponse.responseText}`);
+              alert(`Couldnt create station: ${errorResponse.responseText}`);
             }            
           }
         });
       });      
     });
     </script>
-    <div>
-      <nav class="navbar navbar-inverse" style="padding-left:130px;">
-          <ul class="nav navbar-nav">
-            <li><a href="/">Home</a></li>
-          </ul>
-      </nav>
-    </div>
-
     <div class="center">
-           <h1>Reset Password</h1>
+    <h1>Create Station</h1>
     </div>
      <div style="padding-left: 500px">
     <form class="form-horizontal" style="width: 50%;">
       <div class="form-group">
-        <label for="newPassword" class="col-sm-2 control-label">New Password</label>
+        <label for="stationName" class="col-sm-2 control-label">Station Name</label>
           <div class="col-sm-10">
-              <input type="text" class="form-control" id="newPassword" name="newPassword" placeholder="NewPassword" value="">
+              <input type="text" class="form-control" id="stationName" name="stationName" placeholder="StationName" value="">
           </div>
       </div>
          <div class="form-group">
           <div class="col-sm-10 col-sm-offset-2">
-              <input id="reset" name="reset" type="button" value="Reset" class="btn btn-primary">
+              <input id="create" name="create" type="button" value="create" class="btn btn-primary">
           </div>
       </div>
         </form>
