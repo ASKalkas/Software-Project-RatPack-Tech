@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Courses</title>
+    <title>Dashboard</title>
     <link rel='stylesheet' href='/styles/bootstrap.min.css' />
     <link rel='stylesheet' href='/styles/style.css' />
     <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
@@ -21,9 +21,10 @@
         <nav class="navbar navbar-inverse" style="padding-left:130px;">
           <ul class="nav navbar-nav">
             <li class="active"><a href="/dashboard">Home</a></li>
-            <li><a href="/stations_example">Station</a></li>
             <li><a href="/users">Users</a></li>
             <li><a href="/users/add">Add Users</a></li>
+             <li><a href="/resetPassword">Reset Password</a></li>
+             <li><a href="/manage">Manage</a></li>
             <li><a href="/">Logout</a></li>
           </ul>
        </nav>
