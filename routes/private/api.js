@@ -186,17 +186,17 @@ module.exports = function (app) {
 
   //checkPrice endpoint
   app.get("/api/v1/tickets/price", async function (req, res) {
-    const originId = req.query.originId;
-    const destinationId = req.query.destinationId;
+    const originName = req.query.originId;
+    const destinationName = req.query.destinationId;
 
     const station1 = await db
       .select("*")
       .from("se_project.stations")
-      .where("id", originId);
+      .where("stationname", originName);
     const station2 = await db
       .select("*")
       .from("se_project.stations")
-      .where("id", destinationId);
+      .where("stationname", destinationName);
 
     if (!station1) {
       return res.status(404).send("start station does not exist");
@@ -204,19 +204,29 @@ module.exports = function (app) {
       return res.status(404).send("end station does not exist");
     }
 
+    const originId = await db
+    .select("id")
+    .from("se_project.stations")
+    .where("stationname", originName)
+    .first();
+    const destinationId = await db
+    .select("id")
+    .from("se_project.stations")
+    .where("stationname", destinationName)
+    .first();
 
     try {
-      const price = await getPrice(originId, destinationId);
+      const price = await getPrice(originId.id, destinationId.id);
       if (price < 0) {
         return res.status(400).send("missing zone data");
       }
-      return res.status(200).send("price: " + price);
+      return res.status(200).send(""+ price);
     } catch (e) {
       console.log(e.message);
       return res.status(400).send("Could not get price");
     }
 
-  })
+  });
 
   app.put("/api/v1/ride/simulate", async function (req, res) {
     const origin = req.body.origin;
