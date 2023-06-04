@@ -35,12 +35,24 @@ module.exports = function(app) {
     const users = await db.select('*').from('se_project.users');
     return res.render('users', { users });
   });
-
-  // Register HTTP endpoint to render /courses page
-  app.get('/stations', async function(req, res) {
+  app.get('/manage/stations', async function(req, res) {
     const user = await getUser(req);
     const stations = await db.select('*').from('se_project.stations');
-    return res.render('stations_example', { ...user, stations });
+    return res.render('manage_stations', { ...user, stations });
   });
+  app.get('/resetPassword', async function(req, res) {
+    return res.render('resetpassword');
+  });
+  app.get('/manage', async function(req, res) {
+    return res.render('manage');
+  });
+  app.get('/manage/stations/create', async function(req, res) {
+    return res.render('manage_stations_create');
+  });
+  app.get('/manage/stations/edit/:stationId', async function(req, res) {
+    const stationId = req.params.stationId;
+  
+    res.render('manage_stations_edit', { stationId });
+});
 
 };
