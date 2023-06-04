@@ -54,5 +54,14 @@ module.exports = function(app) {
   
     res.render('manage_stations_edit', { stationId });
 });
+  app.get('/prices', async function(req, res) {
+    return res.render('prices');
+  });
+  app.get('/rides', async function(req, res) {
+    return res.render('rides');
+  });
+  app.get('/rides/simulate', async function(req, res) {
+    return res.render('simulate_ride');
+  });
 
 };
