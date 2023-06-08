@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tickets</title>
+    <link rel='stylesheet' href='/styles/bootstrap.min.css' />
+    <link rel='stylesheet' href='/styles/style.css' />
+    <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <script>
+        $(document).ready(function () {
+            $("#purchaseTicket").click(function () {
+                location.href = '/tickets/purchase';
+            });
+            $("#refund").click(function () {
+                const ticketID = $('#ticketID').val();;
+                const data = {
+                    ticketID,
+                };
+                $.ajax({
+                    type: "POST",
+                    url: `/api/v1/refund/${ticketID}`,
+                    data,
+                    success: function (serverResponse) {
+                        if (serverResponse) {
+                            alert('Refund Requested successfully');
+                        }
+                    },
+                    error: function (errorResponse) {
+                        if (errorResponse) {
+                            alert(`Error Cannot Refund Ticket: ${errorResponse.responseText}`);
+                        }
+                    }
+                });
+            });
+
+
+        });
+    </script>
+    <div>
+        <div>
+            <nav class="navbar navbar-inverse" style="padding-left:130px;">
+                <ul class="nav navbar-nav">
+                    <li><a href="/dashboard">Home</a></li>
+                    <li><a href="/">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+        <br />
+        <div style="position:absolute; right:0;">
+            <input id="purchaseTicket" type="button" value="Purchase Ticket" class="btn btn-primary">
+            <br />
+        </div>
+        <table id="station-table" class="table">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">origin</th>
+                    <th scope="col">destination</th>
+                    <th scope="col">userid</th>
+                    <th scope="col">subid</th>
+                    <th scope="col">tripdate</th>
+
+
+
+                </tr>
+                {{#tickets}}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{origin}}</td>
+                    <td>{{destination}}</td>
+                    <td>{{userid}}</td>
+                    <td>{{subid}}</td>
+                    <td>{{tripdate}}</td>
+
+                </tr>
+                {{/tickets}}
+            </thead>
+
+        </table>
+        <label for="ticketID" class="col-sm-2 control-label">Ticket ID</label>
+        <div class="col-sm-10">
+            <input type="text" class="form-control" id="ticketID" name="ticketID" placeholder="ID" value=""
+                style="width: 315px;">
+        </div>
+        <div>
+            <input id="refund" name="refund" type="button" value="Refund" class="btn btn-primary">
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tickets</title>
+    <link rel='stylesheet' href='/styles/bootstrap.min.css' />
+    <link rel='stylesheet' href='/styles/style.css' />
+    <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <script>
+        $(document).ready(function () {
+            $("#purchaseSubscription").click(function () {
+                location.href = '/subscriptions/purchase';
+            });
+        });
+    </script>
+    <div>
+        <div>
+            <nav class="navbar navbar-inverse" style="padding-left:130px;">
+                <ul class="nav navbar-nav">
+                    <li><a href="/dashboard">Home</a></li>
+                    <li><a href="/">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+        <br />
+        <div style="position:absolute; right:0;">
+            <input id="purchaseSubscription" type="button" value="Purchase Subscription" class="btn btn-primary">
+            <br />
+        </div>
+        <table id="station-table" class="table">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">zoneID</th>
+                    <th scope="col">userid</th>
+                </tr>
+                {{#subscriptions}}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{subtype}}</td>
+                    <td>{{zoneid}}</td>
+                    <td>{{userid}}</td>
+                </tr>
+                {{/subscriptions}}
+            </thead>
+
+        </table>
+    </div>
+</body>
+
+</html>

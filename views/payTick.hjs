@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <head>
+    <link rel='stylesheet' href='/styles/bootstrap.min.css' />
+    <link rel='stylesheet' href='/styles/style.css' />
+    <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.min.js" type="text/javascript"></script>
+  </head>
+</head>
+
+<body>
+  <script>
+    $(document).ready(function () {
+      ///////////////////////////////////////////////////////////////////////
+      $("#paytick").click(function () {
+        const creditCardNumber = $('#creditCardNumber').val();
+        const holderName = $('#holderName').val();
+        const pays = $('#subid').val();
+        const subts = $('#origin').val();
+        const zome = $('#destin').val();
+        const rome = $('#date').val();
+
+        const data = {
+          purchsedId,
+          creditCardNumber,
+          holderName,
+          payedAmount,
+          subType,
+          zoneId,
+        };
+
+        $.ajax({
+          type: "POST",
+          url: `/api/v1/tickets/purchase/subscription/${purchsedId}`,
+          data,
+          success: function (serverResponse) {
+            if (serverResponse) {
+              alert('ticket paid successfully');
+
+            }
+          },
+          error: function (errorResponse) {
+            if (errorResponse) {
+              alert(`couldent puchase ticket: ${errorResponse.responseText}`);
+            }
+          }
+        });
+      });
+      /////////////////////////////////////////////////////////////////////
+      $("#pay").click(function () {
+        const purchsedId = 5;
+        const creditCardNumber = $('#creditCardNumber').val();
+        const holderName = $('#holderName').val();
+        const payedAmount = $('#payedAmount').val();
+        const origin = $('#origin').val();
+        const destination = $('#destin').val();
+        const tripDate = $('#date').val();
+        console.log("hello");
+        const data = {
+          purchsedId,
+          creditCardNumber,
+          holderName,
+          payedAmount,
+          origin,
+          destination,
+          tripDate,
+        };
+
+        $.ajax({
+          type: "POST",
+          url: `/api/v1/payment/ticket/${purchsedId}`,
+          data,
+          success: function (serverResponse) {
+            if (serverResponse) {
+              alert(`ticket paid successfully: ${serverResponse}`);
+
+            }
+          },
+          error: function (errorResponse) {
+            if (errorResponse) {
+              alert(`couldn't puchase ticket: ${errorResponse}`);
+            }
+          }
+        });
+      });
+    });
+  </script>
+  <div>
+    <nav class="navbar navbar-inverse" style="padding-left:130px;">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/dashboard">Home</a></li>
+        <li><a href="/tickets">Tickets</a></li>
+        <li><a href="/">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="center">
+    <h1>purchase ticket</h1>
+  </div>
+  <div style="padding-left: 500px">
+    <form class="form-horizontal">
+      <div class="form-group">
+        <label for="creditCardNumber" class="col-sm-2 control-label">credit card number</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="creditCardNumber" name="creditCardNumber"
+            placeholder="creditCardNumber" value="" style="width: 315px;">
+        </div>
+
+        <label for="holderName" class="col-sm-2 control-label">card holder name</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="holderName" name="holderName" placeholder="holderName" value=""
+            style="width: 315px;">
+        </div>
+
+        <label for="payedAmount" class="col-sm-2 control-label">Amount payed</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="payedAmount" name="payedAmount" placeholder="PayedAmount" value=""
+            style="width: 315px;">
+        </div>
+
+        <label for="origin" class="col-sm-2 control-label">origin station</label>
+        <div>
+          <select id="origin" class="form-control" style="width: 315px;">
+            <option disabled selected value="-1">Origin</option>
+            {{#stations}}
+            <option value={{stationname}}>{{stationname}}</option>
+            {{/stations}}
+          </select>
+        </div>
+        <label for="destin" class="col-sm-2 control-label">destination station</label>
+        <div>
+          <select id="destin" class="form-control" style="width: 315px;">
+            <option disabled selected value="-1">Destination</option>
+            {{#stations}}
+            <option value={{stationname}}>{{stationname}}</option>
+            {{/stations}}
+          </select>
+        </div>
+        <label for="date" class="col-sm-2 control-label">Date</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="date" name="date" placeholder="dd mmmm yyyy" value=""
+            style="width: 315px;">
+        </div>
+
+        <label for="subid" class="col-sm-2 control-label">subscribtion id</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" id="subid" name="subid" placeholder="subid" value=""
+            style="width: 315px;">
+        </div>
+
+      </div>
+      <div class="form-group">
+        <div class="col-sm-10 col-sm-offset-2">
+          <input id="pay" name="Buy" type="button" value="Buy" class="btn btn-primary">
+          <input id="paytick" name="Pay With Sub" type="button" value="Pay With Sub" class="btn btn-primary">
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>

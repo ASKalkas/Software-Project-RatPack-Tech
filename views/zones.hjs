@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>zones</title>
+  <link rel='stylesheet' href='/styles/bootstrap.min.css' />
+  <link rel='stylesheet' href='/styles/style.css' />
+  <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
+  <script src="/js/bootstrap.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+  <script>
+    $(document).ready(function () {
+      $("#update").click(function () {
+        const zoneid = $('#zoneid').val();
+        const price = $('#newprice').val();
+        const data = {
+          price,
+        };
+        $.ajax({
+          type: "PUT",
+          url: `/api/v1/zones/${zoneid}`,
+          data,
+          success: function (serverResponse) {
+            if (serverResponse) {
+              alert('zone price updated successfully');
+              location.href = '/manage/zones';
+            }
+          },
+          error: function (errorResponse) {
+            if (errorResponse) {
+              alert(`Error Cannot update zone price: ${errorResponse.responseText}`);
+            }
+          }
+        });
+
+      });
+
+
+
+    });
+
+
+
+  </script>
+  <div>
+    <div>
+      <nav class="navbar navbar-inverse" style="padding-left:130px;">
+        <ul class="nav navbar-nav">
+          <li><a href="/dashboard">Home</a></li>
+          <li class="active"><a href="/manage">manage</a></li>
+          <li><a href="/">Logout</a></li>
+        </ul>
+      </nav>
+    </div>
+    <br />
+
+    <table id="zone-table" class="table">
+      <thead>
+        <tr>
+          <th scope="col">id</th>
+          <th scope="col">zoneType</th>
+          <th scope="col">price</th>
+        </tr>
+        {{#zones}}
+        <tr>
+          <td>{{id}}</td>
+          <td>{{zonetype}}</td>
+          <td>{{price}}</td>
+        </tr>
+        {{/zones}}
+      </thead>
+
+    </table>
+    {{#isAdmin}}
+    <div class="form-group">
+      <label for="zoneid" class="col-sm-2 control-label">zoneid</label>
+      <div class="col-sm-10">
+        <input type="number" class="form-control" id="zoneid" name="zoneid" placeholder="zoneid" value="" style="width: 315px;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="newprice" class="col-sm-2 control-label">newprice</label>
+      <div class="col-sm-10">
+        <input type="number" class="form-control" id="newprice" name="newprice" placeholder="newprice" value="" style="width: 315px;">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-sm-10 col-sm-offset-2">
+        <input id="update" name="update" type="button" value="update" class="btn btn-primary">
+      </div>
+    </div>
+    {{/isAdmin}}
+  </div>
+
+</body>
+
+</html>

@@ -623,6 +623,24 @@ module.exports = function (app) {
     res.status(200).send("Station deleted successfully");
   });
 
+  app.post("/api/v1/senior/request", async function (req, res) {
+    try{
+      const nationalID = req.body.nationalId;
+      const user = await getUser(req);
+      const userid = user.userid;
+      const data = {
+        status:"pending",
+        userid:userid,
+        nationalid:nationalID,
+      }
+      const row = await db("se_project.senior_requests").insert(data).returning("*");
+      return res.status(200).json(row);
+    }catch(e){
+      console.log(e.message);
+      return res.status(400).send("Could not request senior");
+    }
+  });
+
   app.post("/api/v1/refund/:ticketId", async function (req, res) {
 
     try {
@@ -989,8 +1007,68 @@ module.exports = function (app) {
     return res.status(200).send("Route deleted successfully");
   });
 
+  //pay sub online
+  app.post("/api/v1/payment/subscription/:purchasedId", async function (req, res) {
+    
+    const purchasedID =req.params.purchasedId;
+    console.log(purchasedID);
+    const CCN = req.body.creditCardNumber;
+    const HOWN= req.body.holderName;
+    const ammo= req.body.payedAmount;
+    const typo= req.body.subType;
+    const Zid= req.body.zoneId;
+    const userd=await getUser(req);
+    const userdd=userd.userid;
+    console.log(Zid);
+    console.log(userdd);
+ const inserto={
+  purchasedid:purchasedID,
+  //amount from get ammount or body?
+ amount:ammo,
+  userid:userdd,
+  purchasetype:"subscription",
+ // zoneid:Zid
+};
+const subExists = await db
+   .select("*")
+   .from("se_project.subsription")
+   .where("userid", userdd).andWhere("zoneid",Zid);
+ if (isEmpty(subExists)) {
+  const niko={
+    zoneid:Zid,
+    subtype:"quartrly",
+    nooftickets:0,
+    userid:userdd
+  }
+  const yoo=await db("se_project.subsription").insert(niko).returning("*");
+ }
+  
+  const ppo= await db("se_project.transactions").insert(inserto).returning("*");
+  
+    if(typo=="annual"){
+     const ddo= await db("se_project.subsription")
+      .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:100,subtype:"annual"});
+    }
+    else{
+      //duuno if month or monthly ba3den
+      if(typo=="monthly"){
+        const ddo=await db("se_project.subsription")
+        .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:50,subtype:"monthly"});
+      }
+      else{ 
+        const ddo=await db("se_project.subsription")
+    .where("zoneid",Zid  ).andWhere( "userid",userdd)
+    .update({nooftickets:10,subtype:"quartrly"});
+      }
+    }
+     res.status(200).send("subscription paid"); 
+
+  });
+
   app.post("/api/v1/payment/ticket/:purchasedId", async function (req, res) {
-    const { purchasedId } = req.params;
+    const purchasedId = req.params.purchasedId;
     const CCN = req.body.creditCardNumber;
     const HOWN = req.body.holderName;
     const ammo = req.body.payedAmount;
@@ -998,9 +1076,11 @@ module.exports = function (app) {
     const destinationo = req.body.destination;
     const tripDateo = req.body.tripDate;
     const tripTmp = new Date(tripDateo);
+    console.log(tripTmp);
     const tripCompare = tripTmp.toISOString();
     const userdo = await getUser(req);
     const userpd = userdo.id;
+    console.log(CCN);
     ///////////////////////////
     const og = await db
       .select("id")

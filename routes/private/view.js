@@ -44,7 +44,8 @@ module.exports = function(app) {
     return res.render('resetpassword');
   });
   app.get('/manage', async function(req, res) {
-    return res.render('manage');
+    const user = await getUser(req);
+    return res.render('manage', {...user});
   });
   app.get('/manage/stations/create', async function(req, res) {
     return res.render('manage_stations_create');
@@ -55,7 +56,8 @@ module.exports = function(app) {
     res.render('manage_stations_edit', { stationId });
 });
   app.get('/prices', async function(req, res) {
-    return res.render('prices');
+    const stations = await db.select("*").from("se_project.stations");
+    return res.render('prices', {stations});
   });
   app.get('/rides', async function(req, res) {
     return res.render('rides');
@@ -63,5 +65,41 @@ module.exports = function(app) {
   app.get('/rides/simulate', async function(req, res) {
     return res.render('simulate_ride');
   });
-
+  app.get('/tickets', async function(req, res) {
+    const user = await getUser(req);
+    const userID = user.userid;
+    const tickets = await db.select("*").from("se_project.tickets").where("userid", userID);
+    return res.render('tickets', {tickets});
+  });
+  app.get('/tickets/purchase', async function(req, res) {
+    const user = await getUser(req);
+    const stations = await db.select("*").from("se_project.stations");
+    return res.render('payTick', {user, stations});
+  });
+  app.get('/subscriptions', async function(req, res) {
+    const user = await getUser(req);
+    const userID = user.userid;
+    const subscriptions = await db.select("*").from("se_project.subsription").where("userid", userID);
+    return res.render('subscriptions', {subscriptions});
+  });
+  app.get('/subscriptions/purchase', async function(req, res) {
+    const zones = await db.select("*").from("se_project.zones");
+    return res.render('paySub', {zones});
+  });
+  app.get('/manage/zones', async function(req, res) {
+    const user = await getUser(req);
+    const zones = await db.select('*').from('se_project.zones').orderBy("id");
+    return res.render('zones', {...user, zones});
+  });
+  app.get('/manage/requests', async function(req, res) {
+    return res.render('requests');
+  });
+  app.get('/manage/requests/refunds', async function(req, res) {
+    const refunds = await db.select("*").from("se_project.refund_requests").where("status", "pending");
+    return res.render('refunds', {refunds});
+  });
+  app.get('/manage/requests/seniors', async function(req, res) {
+    const seniors = await db.select("*").from("se_project.senior_requests").where("status", "pending");
+    return res.render('seniors', {seniors});
+  });
 };
