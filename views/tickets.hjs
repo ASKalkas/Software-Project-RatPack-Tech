@@ -50,6 +50,9 @@
             </nav>
         </div>
         <br />
+        <div class="center">
+            <h1>Tickets</h1>
+        </div>
         <div style="position:absolute; right:0;">
             <input id="purchaseTicket" type="button" value="Purchase Ticket" class="btn btn-primary">
             <br />

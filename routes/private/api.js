@@ -133,7 +133,8 @@ const getTransferStations = async function (startStation = 1, endStation = 2) {
       .first();
 
     if (isTransfer.stationtype == "transfer" && !isFirst) {
-      transfer.push({ station: curr, length: stack.length });
+      const name = await db.select("stationname").from("se_project.stations").where("id", curr).first();
+      transfer.push({ station: name.stationname, length: stack.length });
     }
 
     visited.push(curr);
@@ -234,8 +235,7 @@ module.exports = function (app) {
     const date = new Date(req.body.tripDate);
     const tripDate = date.toISOString();
     const user = await getUser(req);
-    const userID = user.id;
-    console.log(userID);
+    const userID = user.userid;
 
     const rideExists = await db
       .select("*")
@@ -320,7 +320,7 @@ module.exports = function (app) {
     const newStation = {
       stationname: stationName,
       stationtype: "normal",
-      stationstatus: "new created",
+      stationstatus: "new",
     };
 
     //await Station.insertOrIgnore(newStation);
@@ -623,21 +623,24 @@ module.exports = function (app) {
     res.status(200).send("Station deleted successfully");
   });
 
-  app.post("/api/v1/senior/request", async function (req, res) {
-    try{
-      const nationalID = req.body.nationalId;
+  app.post("/api/v1/senior/request", async function (req, res){
+    try {
       const user = await getUser(req);
-      const userid = user.userid;
-      const data = {
-        status:"pending",
-        userid:userid,
-        nationalid:nationalID,
+      const exists = await db.select("*").from("se_project.senior_requests").where("status", "pending").andWhere("userid", user.userid);
+      if(!isEmpty(exists)){
+        return res.status(400).send("you already have a request");
       }
-      const row = await db("se_project.senior_requests").insert(data).returning("*");
-      return res.status(200).json(row);
-    }catch(e){
+      const NewSreq = {
+        status: "pending",
+        userid: user.userid,
+        nationalid: req.body.nationalId
+      };
+      const Sreq = await db("se_project.senior_requests").insert(NewSreq).returning("*");
+      return res.status(200).send(Sreq);
+
+    }catch (e) {
       console.log(e.message);
-      return res.status(400).send("Could not request senior");
+      return res.status(400).send("Could not complete action");
     }
   });
 
@@ -651,9 +654,14 @@ module.exports = function (app) {
       const endId = await db.select('id').from('se_project.stations').where("stationname", end);
       const amnt = await getPrice(startId.id, endId.id);
       const user = await getUser(req);
+
+      const exists = await db.select("*").from("se_project.refund_requests").where("status", "pending").andWhere("ticketid", TId);
+      if(!isEmpty(exists)){
+        return res.status(400).send("you already have a request");
+      }
       const NewRef = {
         status: "pending",
-        userid: user.id,
+        userid: user.userid,
         refundamount: amnt,
         ticketid: TId,
       };
@@ -680,13 +688,13 @@ module.exports = function (app) {
   app.post("/api/v1/route", async function (req, res) {
 
     // Check if user already exists in the system
-    const routeName = req.body.routename
-    const fromStationId = req.body.fromstationid
-    const toStationId = req.body.tostationid
+    //const routeName = req.body.routeName
+    const fromStationId = req.body.fromStationId
+    const toStationId = req.body.toStationId
     const routeExists = await db
       .select("*")
       .from("se_project.routes")
-      .where("routename", routeName);
+      .where("fromstationid", fromStationId).andWhere("tostationid", toStationId).first();
     //const fromStationId=req.body.new
     //const toStationId= routeExists.tostationid
     if (!isEmpty(routeExists)) {
@@ -696,36 +704,28 @@ module.exports = function (app) {
     const newRoute = {
       fromstationid: fromStationId,
       tostationid: toStationId,
-      routename: routeName,
+      routename: "NewFrom",
     };
+    const newRoute1 = {
+      fromstationid: toStationId,
+      tostationid: fromStationId,
+      routename: "NewTo",
+    };
+    
     try {
       const route = await db("se_project.routes").insert(newRoute);//.returning("*");
-
-      const checkToIdInStationTable = await db
-        .select("*")
-        .from("se_project.stations")
-        .where("id", toStationId)
-        .first();
-      const checkFromIdInStationTable = await db
-        .select("*")
-        .from("se_project.stations")
-        .where("id", fromStationId)
-        .first();
-      if (checkFromIdInStationTable.stationstatus == "unconnected") {
-        await db("se_project.stations")
-          .where("id", fromStationId)
-          .update({
-            stationstatus: "new"
-          });
-      }
-      if (checkToIdInStationTable.stationstatus == "unconnected") {
-        await db("se_project.stations")
-          .where("id", toStationId)
-          .update({
-            stationstatus: "new"
-          });
-      }
-
+      const route1 = await db("se_project.routes").insert(newRoute1);
+      await db("se_project.stations")
+      .where("id", fromStationId)
+      .update({
+        stationstatus: "old"
+      });
+      await db("se_project.stations")
+      .where("id", toStationId)
+      .update({
+        stationstatus: "old"
+      });
+  
       const routeToStationExistsInTo = await db
         .select("*")
         .from("se_project.routes")
@@ -836,7 +836,7 @@ module.exports = function (app) {
 
   app.put("/api/v1/route/:routeId", async function (req, res) {
     const { routeId } = req.params;// access the request parameters
-    const routeName = req.body.routename;
+    const routeName = req.body.routeName;
     const existingRoutes = await db
       .select("*")
       .from("se_project.routes")
@@ -872,6 +872,13 @@ module.exports = function (app) {
       .first();
     const fromStationId = existingRoutes.fromstationid
     const toStationId = existingRoutes.tostationid
+
+    const existsmiddlefrom = await db .select("*") .from("se_project.stations").where("id" , fromStationId).first();
+    const existsmiddleto = await db .select("*") .from("se_project.stations").where("id" , toStationId).first();
+
+    if(existsmiddlefrom.stationposition == "middle" && existsmiddleto.stationposition == "middle"){
+      return res.status(400).send("Route is middle");
+    }
     if (!existingRoutes) {
       return res.status(404).send("Route does not exist");
     }
@@ -924,14 +931,14 @@ module.exports = function (app) {
       await db("se_project.stations")
         .where("id", fromStationId)
         .update({
-          stationstatus: "unconnected"
+          stationstatus: "new"
         });
     }
     if (!routeToExists) {
       await db("se_project.stations")
         .where("id", toStationId)
         .update({
-          stationstatus: "unconnected"
+          stationstatus: "new"
         });
     }
 
@@ -1076,11 +1083,9 @@ const subExists = await db
     const destinationo = req.body.destination;
     const tripDateo = req.body.tripDate;
     const tripTmp = new Date(tripDateo);
-    console.log(tripTmp);
     const tripCompare = tripTmp.toISOString();
     const userdo = await getUser(req);
-    const userpd = userdo.id;
-    console.log(CCN);
+    const userpd = userdo.userid;
     ///////////////////////////
     const og = await db
       .select("id")
@@ -1169,7 +1174,7 @@ const subExists = await db
     const tripTmp = new Date(tripd);
     const tripCompare = tripTmp.toISOString();
     const userd = await getUser(req);
-    const userod = userd.id;
+    const userod = userd.userid;
     ///////////////////////////
     const og = await db
       .select("id")
@@ -1262,7 +1267,7 @@ const subExists = await db
       await db("se_project.senior_requests")
         .where("id", requestId)
         .update({
-          status: (req.body.seniorStaus).toUpperCase(),
+          status: (req.body.seniorStaus),
         })
         .returning("*");
 
@@ -1315,9 +1320,9 @@ const subExists = await db
           .first();
 
         if (subId.subid != undefined) {
-          const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subId);
+          const prevSub = await db.select("nooftickets").from("se_project.subsription").where("id", subId.subid);
           await db("se_project.subsription")
-            .where("id", subId)
+            .where("id", subId.subid)
             .update({
               nooftickets: prevSub[0].nooftickets + 1
             });

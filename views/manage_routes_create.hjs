@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <head>
+    <link rel='stylesheet' href='/styles/bootstrap.min.css' />
+    <link rel='stylesheet' href='/styles/style.css' />
+    <script src="/js/jquery-2.2.0.min.js" type="text/javascript"></script>
+    <script src="/js/bootstrap.min.js" type="text/javascript"></script>
+  </head>
+</head>
+
+<body>
+  <script>
+    $(document).ready(function () {
+      $("#create").click(function () {
+        const fromStationId = $('#fromStationId').val();
+        const toStationId = $('#toStationId').val();
+
+        const data = {
+          fromStationId,
+          toStationId,
+        };
+        $.ajax({
+          type: "POST",
+          url: '/api/v1/route',
+          data,
+          success: function (serverResponse) {
+            if (serverResponse) {
+              alert('Route created successfully');
+              location.href = '/manage/routes';
+            }
+          },
+          error: function (errorResponse) {
+            if (errorResponse) {
+              alert(`Couldnt create route: ${errorResponse.responseText}`);
+            }
+          }
+        });
+      });
+    });
+  </script>
+  <div>
+    <nav class="navbar navbar-inverse" style="padding-left:130px;">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="/dashboard">Home</a></li>
+        <li><a href="/manage/routes">Routes</a></li>
+        <li><a href="/">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="center">
+    <h1>Create Route</h1>
+  </div>
+  <div style="padding-left: 500px">
+    <form class="form-horizontal">
+      <div class="form-group">
+        <div class="form-group">
+          <label for="fromStationId" class="col-sm-2 control-label">From Station</label>
+          <div class="col-sm-10">
+            <select id="fromStationId" style="width: 315px;">
+              <option disabled selected value="-1">From Station</option>
+              {{#newStations}}
+              <option value={{id}}>{{stationname}}</option>
+              {{/newStations}}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="toStationId" class="col-sm-2 control-label">To Station</label>
+          <div class="col-sm-10">
+            <select id="toStationId" style="width: 315px;">
+              <option disabled selected value="-1">To Station</option>
+              {{#stations}}
+              <option value={{id}}>{{stationname}}</option>
+              {{/stations}}
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-sm-10 col-sm-offset-2">
+          <input id="create" name="create" type="button" value="create" class="btn btn-primary">
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>

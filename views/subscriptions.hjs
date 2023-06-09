@@ -27,6 +27,9 @@
             </nav>
         </div>
         <br />
+        <div class="center">
+    <h1>Subscriptions</h1>
+    </div>
         <div style="position:absolute; right:0;">
             <input id="purchaseSubscription" type="button" value="Purchase Subscription" class="btn btn-primary">
             <br />
@@ -37,14 +40,14 @@
                     <th scope="col">id</th>
                     <th scope="col">Type</th>
                     <th scope="col">zoneID</th>
-                    <th scope="col">userid</th>
+                    <th scope="col">No Of Tickets</th>
                 </tr>
                 {{#subscriptions}}
                 <tr>
                     <td>{{id}}</td>
                     <td>{{subtype}}</td>
                     <td>{{zoneid}}</td>
-                    <td>{{userid}}</td>
+                    <td>{{nooftickets}}</td>
                 </tr>
                 {{/subscriptions}}
             </thead>

@@ -24,7 +24,7 @@
           success: function(serverResponse) {
             if(serverResponse) {
               alert('Station created successfully');
-               location.href = '/manage';
+               location.href = '/manage/stations';
             }
           },
           error: function(errorResponse) {
@@ -36,6 +36,15 @@
       });      
     });
     </script>
+    <div>
+        <nav class="navbar navbar-inverse" style="padding-left:130px;">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="/dashboard">Home</a></li>
+            <li><a href="/manage/stations">Stations</a></li>
+            <li><a href="/">Logout</a></li>
+          </ul>
+       </nav>
+      </div>
     <div class="center">
     <h1>Create Station</h1>
     </div>

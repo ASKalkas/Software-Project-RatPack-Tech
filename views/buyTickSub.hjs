@@ -14,43 +14,32 @@
 <body>
   <script>
     $(document).ready(function () {
-      ///////////////////////////////////////////////////////////////////////
-      $("#payWithSub").click(function () {
-        location.href = '/tickets/purchase/subscription';
-      });
-      /////////////////////////////////////////////////////////////////////
-      $("#pay").click(function () {
-        const purchsedId = 5;
-        const creditCardNumber = $('#creditCardNumber').val();
-        const holderName = $('#holderName').val();
-        const payedAmount = $('#payedAmount').val();
-        const origin = $('#origin').val();
-        const destination = $('#destin').val();
-        const tripDate = $('#date').val();
-        console.log("hello");
+      $("#buy").click(function () {
+        const origio = $('#origin').val();
+        const destin = $('#destin').val();
+        const date = $('#date').val();
+        const subID = $('#subid').val();
+
         const data = {
-          purchsedId,
-          creditCardNumber,
-          holderName,
-          payedAmount,
-          origin,
-          destination,
-          tripDate,
+          origio,
+          destin,
+          date,
+          subID
         };
 
         $.ajax({
           type: "POST",
-          url: `/api/v1/payment/ticket/${purchsedId}`,
+          url: `/api/v1/tickets/purchase/subscription`,
           data,
           success: function (serverResponse) {
             if (serverResponse) {
-              alert(`ticket paid successfully: ${serverResponse}`);
-
+              alert('ticket paid successfully');
+                location.href = '/tickets';
             }
           },
           error: function (errorResponse) {
             if (errorResponse) {
-              alert(`couldn't puchase ticket: ${errorResponse.responseText}`);
+              alert(`couldent puchase ticket: ${errorResponse.responseText}`);
             }
           }
         });
@@ -72,24 +61,6 @@
   <div style="padding-left: 500px">
     <form class="form-horizontal">
       <div class="form-group">
-        <label for="creditCardNumber" class="col-sm-2 control-label">credit card number</label>
-        <div class="col-sm-10">
-          <input type="text" class="form-control" id="creditCardNumber" name="creditCardNumber"
-            placeholder="creditCardNumber" value="" style="width: 315px;">
-        </div>
-
-        <label for="holderName" class="col-sm-2 control-label">card holder name</label>
-        <div class="col-sm-10">
-          <input type="text" class="form-control" id="holderName" name="holderName" placeholder="holderName" value=""
-            style="width: 315px;">
-        </div>
-
-        <label for="payedAmount" class="col-sm-2 control-label">Amount payed</label>
-        <div class="col-sm-10">
-          <input type="text" class="form-control" id="payedAmount" name="payedAmount" placeholder="PayedAmount" value=""
-            style="width: 315px;">
-        </div>
-
         <label for="origin" class="col-sm-2 control-label">origin station</label>
         <div>
           <select id="origin" class="form-control" style="width: 315px;">
@@ -116,15 +87,18 @@
 
         <label for="subid" class="col-sm-2 control-label">subscribtion id</label>
         <div class="col-sm-10">
-          <input type="text" class="form-control" id="subid" name="subid" placeholder="subid" value=""
-            style="width: 315px;">
+          <select id="subid" class="form-control" style="width: 315px;">
+            <option disabled selected value="-1">Subscription No Of Tickets</option>
+            {{#subs}}
+            <option value={{id}}>{{nooftickets}}</option>
+            {{/subs}}
+          </select>
         </div>
 
       </div>
       <div class="form-group">
         <div class="col-sm-10 col-sm-offset-2">
-          <input id="pay" name="Buy" type="button" value="Buy" class="btn btn-primary">
-          <input id="payWithSub" name="Pay With Sub" type="button" value="Pay With Sub" class="btn btn-primary">
+          <input id="buy" name="Buy" type="button" value="Buy" class="btn btn-primary">
         </div>
       </div>
     </form>

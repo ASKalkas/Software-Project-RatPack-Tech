@@ -27,7 +27,7 @@ $(document).ready(function(){
         success: function(serverResponse) {
           if(serverResponse) {
             alert('Station updated successfully');
-            location.href = '/manage';
+            location.href = '/manage/stations';
           }
         },
         error: function(errorResponse) {
