@@ -16,7 +16,7 @@ const getUser = async function (req) {
     .first();
 
   console.log('user =>', user)
-  user.isUser = user.roleid === roles.user;
+  user.isUser = user.roleid === roles.user||user.roleid === roles.senior;
   user.isAdmin = user.roleid === roles.admin;
   user.isSenior = user.roleid === roles.senior;
 
@@ -32,12 +32,12 @@ module.exports = function (app) {
 
   // Register HTTP endpoint to render /users page
   app.get('/users', async function (req, res) {
-    const users = await db.select('*').from('se_project.users');
+    const users = await db.select('*').from('se_project.users').innerJoin("se_project.roles","users.roleid","roles.id");
     return res.render('users', { users });
   });
   app.get('/manage/stations', async function (req, res) {
     const user = await getUser(req);
-    const stations = await db.select('*').from('se_project.stations');
+    const stations = await db.select('*').from('se_project.stations').orderBy("stationname");
     return res.render('manage_stations', { ...user, stations });
   });
   app.get('/resetPassword', async function (req, res) {

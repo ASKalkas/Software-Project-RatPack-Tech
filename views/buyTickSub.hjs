@@ -33,7 +33,8 @@
           data,
           success: function (serverResponse) {
             if (serverResponse) {
-              alert('ticket paid successfully');
+              alert(`ticket paid successfully: ${serverResponse}`);
+
                 location.href = '/tickets';
             }
           },

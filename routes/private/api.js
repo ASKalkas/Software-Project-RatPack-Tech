@@ -1235,11 +1235,14 @@ const subExists = await db
             nooftickets: prevSub[0].nooftickets - 1
           });
         const transferStations = await getTransferStations(og.id, dn.id);
+        
         let string = "";
         if (transferStations.length > 0) {
           string = "ticket paid\nTrip Date: " + tripd + "\nOrigin: " + origink + "\nDestination: " + desitinationk + "\nTransfer Stations: ";
-          for (let i = 0; i < transferStations.length; i++) {
-            string += transferStations.shift().station + ", "
+          const length=transferStations.length;
+          for (let i = 0; i < length; i++) {
+            //console.log(transferStations[i].station);
+            string += transferStations.shift().station + ", ";
           }
           string = string.slice(0, -2);
         } else {
@@ -1267,10 +1270,16 @@ const subExists = await db
       await db("se_project.senior_requests")
         .where("id", requestId)
         .update({
-          status: (req.body.seniorStaus),
+          status: (req.body.seniorStaus), 
         })
         .returning("*");
-
+        const ss= await db.select("userid").from("se_project.senior_requests").where("id",requestId).first();
+        await db("se_project.users")
+        .where("id", ss.userid)
+        .update({
+          roleid: 3 
+        })
+        .returning("*");
 
       return res.status(200).send("successfully became old man");
     } catch (e) {

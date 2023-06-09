@@ -21,11 +21,12 @@
       <table class="table">
         <thead>
           <tr>
-            <th scope="col">id</th>
+            <th scope="col">Id</th>
             <th scope="col">First</th>
             <th scope="col">Last</th>
-            <th scope="col">Major</th>
-            <th scope="col">Role</th>
+            <th scope="col">Email</th>
+            <th scope="col">Password</th>
+             <th scope="col">Role</th>
           </tr>
           {{#users}}
             <tr>
@@ -34,7 +35,7 @@
               <td>{{lastname}}</td>
               <td>{{email}}</td>
               <td>{{password}}</td>
-              <td>{{roleId}}</td>
+              <td>{{role}}</td>
             </tr>
           {{/users}}
         </thead>
