@@ -127,7 +127,7 @@ module.exports = function (app) {
   });
   app.get('/manage/routes/create', async function (req, res) {
     const newStations = await db.select("*").from("se_project.stations").where("stationstatus", "new").orderBy("stationname");
-    const stations = await db.select("*").from("se_project.stations").orderBy("stationname");
+    const stations = await db.select("*").from("se_project.stations").where("stationstatus", "old").orderBy("stationname");
     return res.render('manage_routes_create', {newStations, stations});
   });
   app.get('/manage/routes/edit/:routeId', async function (req, res) {
