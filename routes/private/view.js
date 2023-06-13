@@ -60,7 +60,8 @@ module.exports = function (app) {
     return res.render('prices', { stations });
   });
   app.get('/rides', async function (req, res) {
-    return res.render('rides');
+    const rides = await db.select("*").from("se_project.rides");
+    return res.render('rides', {rides});
   });
   app.get('/rides/simulate', async function (req, res) {
     const stations = await db.select("*").from("se_project.stations").where("stationstatus", "old").orderBy("stationname");

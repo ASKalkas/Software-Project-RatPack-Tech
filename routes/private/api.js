@@ -713,8 +713,31 @@ module.exports = function (app) {
     };
     
     try {
-      const route = await db("se_project.routes").insert(newRoute);//.returning("*");
-      const route1 = await db("se_project.routes").insert(newRoute1);
+      const route = await db("se_project.routes").insert(newRoute).returning("*");
+      const route1 = await db("se_project.routes").insert(newRoute1).returning("*");
+       //create new stationroutes
+       const stationroute = {
+        stationid: toStationId,
+        routeid: route1[0].id,
+      };
+      const sr = {
+        stationid: toStationId,
+        routeid: route[0].id,
+      };
+      const stationro = {
+        stationid: toStationId,
+        routeid: route[0].id,
+      };
+      const ss = {
+        stationid: toStationId,
+        routeid: route1[0].id,
+      };
+      //insert the new station route
+      await db("se_project.stationroutes").insert(stationroute).returning("*");
+      await db("se_project.stationroutes").insert(sr).returning("*");
+      await db("se_project.stationroutes").insert(stationro).returning("*");
+      await db("se_project.stationroutes").insert(ss).returning("*");
+
       await db("se_project.stations")
       .where("id", fromStationId)
       .update({
@@ -796,7 +819,7 @@ module.exports = function (app) {
         .count("*")
         .from("se_project.routes").
         where("tostationid", toStationId);
-
+      
       if ((countToFrom[0].count) >= 2 || (countToTo[0].count) >= 2) {
         await db("se_project.stations")
           .where("id", toStationId)
@@ -1017,7 +1040,7 @@ module.exports = function (app) {
   //pay sub online
   app.post("/api/v1/payment/subscription/:purchasedId", async function (req, res) {
     
-    const purchasedID =req.params.purchasedId;
+    var purchasedID =req.params.purchasedId;
     console.log(purchasedID);
     const CCN = req.body.creditCardNumber;
     const HOWN= req.body.holderName;
@@ -1028,54 +1051,56 @@ module.exports = function (app) {
     const userdd=userd.userid;
     console.log(Zid);
     console.log(userdd);
- const inserto={
-  purchasedid:purchasedID,
-  //amount from get ammount or body?
- amount:ammo,
-  userid:userdd,
-  purchasetype:"subscription",
- // zoneid:Zid
-};
 const subExists = await db
    .select("*")
    .from("se_project.subsription")
    .where("userid", userdd).andWhere("zoneid",Zid);
- if (isEmpty(subExists)) {
-  const niko={
-    zoneid:Zid,
-    subtype:"quartrly",
-    nooftickets:0,
-    userid:userdd
+ if (!isEmpty(subExists)) {
+  return res.status(400).send("subscription exists");
+}
+
+const niko={
+  zoneid:Zid,
+  subtype:"quartrly",
+  nooftickets:0,
+  userid:userdd
+}
+const yoo=await db("se_project.subsription").insert(niko).returning("*");
+console.log(yoo);
+
+ if(typo=="annual"){
+   const ddo= await db("se_project.subsription")
+   .where("zoneid",Zid  ).andWhere( "userid",userdd)
+   .update({nooftickets:100,subtype:"annual"});
   }
-  const yoo=await db("se_project.subsription").insert(niko).returning("*");
- }
-  
-  const ppo= await db("se_project.transactions").insert(inserto).returning("*");
-  
-    if(typo=="annual"){
-     const ddo= await db("se_project.subsription")
+  else{
+    //duuno if month or monthly ba3den
+    if(typo=="monthly"){
+      const ddo=await db("se_project.subsription")
       .where("zoneid",Zid  ).andWhere( "userid",userdd)
-    .update({nooftickets:100,subtype:"annual"});
+      .update({nooftickets:50,subtype:"monthly"});
     }
-    else{
-      //duuno if month or monthly ba3den
-      if(typo=="monthly"){
-        const ddo=await db("se_project.subsription")
-        .where("zoneid",Zid  ).andWhere( "userid",userdd)
-    .update({nooftickets:50,subtype:"monthly"});
-      }
-      else{ 
-        const ddo=await db("se_project.subsription")
-    .where("zoneid",Zid  ).andWhere( "userid",userdd)
-    .update({nooftickets:10,subtype:"quartrly"});
-      }
+    else{ 
+      const ddo=await db("se_project.subsription")
+      .where("zoneid",Zid  ).andWhere( "userid",userdd)
+      .update({nooftickets:10,subtype:"quartrly"});
     }
-     res.status(200).send("subscription paid"); 
+  }
+  const inserto={
+    purchasedid:yoo[0].id,
+    //amount from get ammount or body?
+   amount:ammo,
+    userid:userdd,
+    purchasetype:"subscription",
+   // zoneid:Zid
+  };
+  const ppo= await db("se_project.transactions").insert(inserto).returning("*");
+  res.status(200).send("subscription paid"); 
 
   });
 
   app.post("/api/v1/payment/ticket/:purchasedId", async function (req, res) {
-    const purchasedId = req.params.purchasedId;
+    var purchasedId = req.params.purchasedId;
     const CCN = req.body.creditCardNumber;
     const HOWN = req.body.holderName;
     const ammo = req.body.payedAmount;
@@ -1111,13 +1136,7 @@ const subExists = await db
       return res.status(400).send("You have a Subscription don't waste money");
     }
     else {
-      const insertog = {
-        purchasedid: purchasedId,
-        //amount from get ammount or body?
-        amount: ammo,
-        userid: userpd,
-        purchasetype: "ticket"
-      };
+      
       const suyExists = await db
         .select("*")
         .from("se_project.tickets")
@@ -1126,8 +1145,8 @@ const subExists = await db
         return res.status(400).send("ticket already bought exists");
       }
       else {
-        const poo = await db("se_project.transactions").insert(insertog).returning("*");
-
+        
+        
         const insertouo = {
 
           //amount from get ammount or body?
@@ -1137,8 +1156,16 @@ const subExists = await db
           userid: userpd,
           // subid:0
         };
-        const ao = await db("se_project.tickets").insert(insertouo).returning("id");
-        const po = ao[0];
+        const ao = await db("se_project.tickets").insert(insertouo).returning("*");
+        const insertog = {
+          purchasedid: ao[0].id,
+          //amount from get ammount or body?
+          amount: ammo,
+          userid: userpd,
+          purchasetype: "ticket"
+        };
+        const poo = await db("se_project.transactions").insert(insertog).returning("*");
+        const po = ao[0].id;
         ///////////////////////////////////////////////////////
         const inserta = {
           userid: userpd,
