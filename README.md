@@ -4,5 +4,22 @@ Our user-friendly website allows you to effortlessly reserve Cairo Metro tickets
 
 Please note that while we completed this project in just two weeks, it has surpassed the required functionality and received an evaluation score of 463/460. Given more time, we could have made it even better.
 
- Run npm install to install all dependences 
- npm start to run project
+to start the server
+```
+$ npm i       # install packages
+$ npm start   # start the server
+```
+
+Server side
+
+Create a ```.env``` file in the server directory and insert the following code. Replace the values with your credentials.
+```
+DATABASE=
+HOST=
+PASSWORD=
+PORT=
+SCHEMA=
+USERNAME=
+```
+
+
